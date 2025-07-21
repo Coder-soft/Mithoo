@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      articles: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          research_data: Json | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          word_count: number | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          research_data?: Json | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          word_count?: number | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          research_data?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          word_count?: number | null
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          id: string
+          messages: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           created_at: string
@@ -50,6 +121,36 @@ export type Database = {
           updated_at?: string
           url?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      fine_tuning_data: {
+        Row: {
+          created_at: string
+          id: string
+          model_name: string | null
+          status: string
+          training_data: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model_name?: string | null
+          status?: string
+          training_data: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model_name?: string | null
+          status?: string
+          training_data?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

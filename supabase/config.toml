@@ -1,1 +1,13 @@
 project_id = "xnpvixeywrkcnpkqgkjh"
+
+[functions.ai-chat]
+verify_jwt = true
+
+[functions.ai-research]
+verify_jwt = true
+
+[functions.ai-generate-article]
+verify_jwt = true
+
+[functions.ai-fine-tune]
+verify_jwt = true

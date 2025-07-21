@@ -1,19 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Bold, Italic, List, Quote, Undo, Redo, Save, Eye, BookOpen } from "lucide-react";
+import { Bold, Italic, List, Quote, Undo, Redo, Save, Eye, BookOpen, Loader2 } from "lucide-react";
+import { Article, useArticle } from "@/hooks/useArticle";
+import { useAI } from "@/hooks/useAI";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
-export const Editor = () => {
+interface EditorProps {
+  currentArticle?: Article | null;
+  onArticleChange?: (article: Article) => void;
+}
+
+export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
+  const { user } = useAuth();
+  const { updateArticle } = useArticle();
+  const { improveArticle, loading } = useAI();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [wordCount, setWordCount] = useState(0);
 
+  useEffect(() => {
+    if (currentArticle) {
+      setTitle(currentArticle.title);
+      setContent(currentArticle.content || "");
+      setWordCount(currentArticle.word_count || 0);
+    }
+  }, [currentArticle]);
+
   const handleContentChange = (value: string) => {
     setContent(value);
-    setWordCount(value.trim().split(/\s+/).filter(word => word.length > 0).length);
+    const words = value.trim().split(/\s+/).filter(word => word.length > 0).length;
+    setWordCount(words);
+  };
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+  };
+
+  const handleSave = async () => {
+    if (!currentArticle || !user) return;
+
+    try {
+      const updatedArticle = await updateArticle(currentArticle.id, {
+        title,
+        content,
+        word_count: wordCount
+      });
+      
+      if (updatedArticle && onArticleChange) {
+        onArticleChange(updatedArticle);
+      }
+      toast.success('Article saved successfully');
+    } catch (error) {
+      // Error handling is done in the hook
+    }
+  };
+
+  const handleImprove = async () => {
+    if (!currentArticle || !title || !content) return;
+
+    try {
+      const response = await improveArticle(title, content, currentArticle.id);
+      if (response) {
+        setContent(response.content);
+        setWordCount(response.wordCount || wordCount);
+      }
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   return (
@@ -34,11 +92,26 @@ export const Editor = () => {
               <Eye className="w-4 h-4 mr-2" />
               Preview
             </Button>
-            <Button variant="ghost" size="sm">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Research
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleImprove}
+              disabled={loading || !content.trim()}
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <BookOpen className="w-4 h-4 mr-2" />
+              )}
+              Improve
             </Button>
-            <Button variant="premium" size="sm" className="shadow-subtle">
+            <Button 
+              variant="premium" 
+              size="sm" 
+              className="shadow-subtle"
+              onClick={handleSave}
+              disabled={!currentArticle || loading}
+            >
               <Save className="w-4 h-4 mr-2" />
               Save
             </Button>
@@ -47,7 +120,7 @@ export const Editor = () => {
         
         <Input
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Enter your article title..."
           className="text-2xl font-bold border-none bg-transparent text-editor-foreground placeholder:text-muted-foreground px-0 focus-visible:ring-0"
         />

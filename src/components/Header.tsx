@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { PenTool, Sparkles, FileText, Settings } from "lucide-react";
+import { FineTuningPanel } from "./FineTuningPanel";
 
 export const Header = () => {
   return (
@@ -23,9 +24,7 @@ export const Header = () => {
             <Sparkles className="w-4 h-4 mr-2" />
             AI Research
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            <Settings className="w-4 h-4" />
-          </Button>
+          <FineTuningPanel />
           <Button variant="premium" className="shadow-elegant">
             <Sparkles className="w-4 h-4 mr-2" />
             New Article
