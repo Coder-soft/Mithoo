@@ -19,7 +19,6 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // Get user
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
@@ -57,23 +56,12 @@ Focus on:
 Return the improved version in markdown format.`
     }
 
-    // Call Gemini API
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192,
-        },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
         systemInstruction: {
           parts: [{
             text: `You are an expert article writer for Mithoo, a professional writing platform. Create high-quality, engaging articles that are:
@@ -91,30 +79,34 @@ Always deliver content that meets publication standards and engages readers effe
     })
 
     const geminiData = await geminiResponse.json()
-    const generatedContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Article content could not be generated.'
+    console.log('Gemini Generate Article Response:', JSON.stringify(geminiData, null, 2));
 
-    // Calculate word count
+    if (!geminiResponse.ok) {
+      console.error('Gemini API Error:', geminiData?.error?.message || 'Unknown error');
+      throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
+    }
+
+    let generatedContent;
+    if (!geminiData.candidates || geminiData.candidates.length === 0) {
+      const blockReason = geminiData.promptFeedback?.blockReason;
+      generatedContent = `Article generation failed. Reason: ${blockReason || 'Content policy'}. Please adjust the title or outline.`;
+      console.warn('Gemini generation blocked:', geminiData.promptFeedback);
+    } else {
+      generatedContent = geminiData.candidates[0]?.content?.parts[0]?.text || 'Article content could not be generated.';
+    }
+
     const wordCount = generatedContent.trim().split(/\s+/).length
 
-    // Update article
     if (articleId) {
       await supabaseClient
         .from('articles')
-        .update({ 
-          content: generatedContent,
-          word_count: wordCount,
-          updated_at: new Date().toISOString()
-        })
+        .update({ content: generatedContent, word_count: wordCount, updated_at: new Date().toISOString() })
         .eq('id', articleId)
         .eq('user_id', user.id)
     }
 
     return new Response(
-      JSON.stringify({ 
-        content: generatedContent,
-        wordCount,
-        action
-      }),
+      JSON.stringify({ content: generatedContent, wordCount, action }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

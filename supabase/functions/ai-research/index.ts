@@ -19,13 +19,11 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // Get user
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    // Prepare research prompt
     const researchPrompt = `Please research the topic: "${topic}" with focus on these keywords: ${keywords.join(', ')}.
 
 Provide:
@@ -37,23 +35,12 @@ Provide:
 
 Format your response as structured research data that can be used for article writing.`
 
-    // Call Gemini API for research
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{ text: researchPrompt }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192,
-        },
+        contents: [{ role: 'user', parts: [{ text: researchPrompt }] }],
+        generationConfig: { temperature: 0.3, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
         systemInstruction: {
           parts: [{
             text: `You are a professional research assistant specializing in gathering comprehensive information for article writing. Provide detailed, accurate, and well-structured research on any given topic. Focus on:
@@ -71,9 +58,22 @@ Always provide high-quality research that writers can use to create engaging and
     })
 
     const geminiData = await geminiResponse.json()
-    const researchData = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Research data could not be generated.'
+    console.log('Gemini Research Response:', JSON.stringify(geminiData, null, 2));
 
-    // Update article with research data
+    if (!geminiResponse.ok) {
+      console.error('Gemini API Error:', geminiData?.error?.message || 'Unknown error');
+      throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
+    }
+
+    let researchData;
+    if (!geminiData.candidates || geminiData.candidates.length === 0) {
+      const blockReason = geminiData.promptFeedback?.blockReason;
+      researchData = `Research failed. Reason: ${blockReason || 'Content policy'}. Please try a different topic or keywords.`;
+      console.warn('Gemini research blocked:', geminiData.promptFeedback);
+    } else {
+      researchData = geminiData.candidates[0]?.content?.parts[0]?.text || 'Research data could not be generated.';
+    }
+
     if (articleId) {
       await supabaseClient
         .from('articles')
@@ -90,11 +90,7 @@ Always provide high-quality research that writers can use to create engaging and
     }
 
     return new Response(
-      JSON.stringify({ 
-        research: researchData,
-        topic,
-        keywords 
-      }),
+      JSON.stringify({ research: researchData, topic, keywords }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
