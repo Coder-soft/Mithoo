@@ -11,7 +11,7 @@ import { Article } from "@/hooks/useArticle";
 interface Message {
   id: string;
   role: 'user' | 'assistant';
-  content: string;
+  content: string | React.ReactNode;
   timestamp: Date;
 }
 
@@ -20,6 +20,14 @@ interface ChatSidebarProps {
   onResearch?: (data: any) => void;
   onGenerate?: (content: string) => void;
 }
+
+const AiLoadingIndicator = () => (
+  <div className="flex items-center space-x-1 p-2">
+    <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+    <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+    <span className="w-2 h-2 bg-current rounded-full animate-bounce"></span>
+  </div>
+);
 
 export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSidebarProps) => {
   const { user } = useAuth();
@@ -38,16 +46,25 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
   const handleSendMessage = async () => {
     if (!inputValue.trim() || loading || !user) return;
     
-    const newMessage: Message = {
+    const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: inputValue,
       timestamp: new Date()
     };
     
-    setMessages(prev => [...prev, newMessage]);
     const messageContent = inputValue;
     setInputValue("");
+    
+    const tempAiMessageId = `temp-ai-${Date.now()}`;
+    const tempAiMessage: Message = {
+      id: tempAiMessageId,
+      role: 'assistant',
+      content: <AiLoadingIndicator />,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage, tempAiMessage]);
     
     try {
       const response = await chatWithAI(
@@ -57,17 +74,25 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
       );
       
       if (response) {
-        setConversationId(response.conversationId);
         const aiResponse: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           content: response.response,
           timestamp: new Date()
         };
-        setMessages(prev => [...prev, aiResponse]);
+        setMessages(prev => prev.map(msg => msg.id === tempAiMessageId ? aiResponse : msg));
+        setConversationId(response.conversationId);
+      } else {
+        throw new Error("No response from AI");
       }
     } catch (error) {
-      // Error handling is done in the hook
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "Sorry, I couldn't get a response. Please try again.",
+        timestamp: new Date()
+      };
+      setMessages(prev => prev.map(msg => msg.id === tempAiMessageId ? errorMessage : msg));
     }
   };
 
@@ -205,7 +230,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                 message.role === 'assistant' 
                   ? 'bg-primary text-primary-foreground' 
-                  : 'bg-message-user text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground'
               }`}>
                 {message.role === 'assistant' ? (
                   <Bot className="w-4 h-4" />
@@ -215,10 +240,10 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
               </div>
               <Card className={`p-3 max-w-[calc(100%-3rem)] ${
                 message.role === 'assistant' 
-                  ? 'bg-message-ai border-border' 
-                  : 'bg-primary text-primary-foreground border-primary'
+                  ? 'bg-ai-message border-border' 
+                  : 'bg-user-message text-primary-foreground border-primary'
               }`}>
-                <p className="text-sm leading-relaxed">{message.content}</p>
+                <div className="text-sm leading-relaxed">{message.content}</div>
                 <span className="text-xs opacity-70 mt-2 block">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
