@@ -32,17 +32,28 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
     if (currentArticle) {
       setTitle(currentArticle.title);
       if (editor) {
-        try {
-          const blocks = JSON.parse(currentArticle.content || '[]') as Block[];
-          editor.replaceBlocks(editor.topLevelBlocks, blocks);
-        } catch (e) {
-          // If content is not valid JSON, treat it as plain text
-          editor.replaceBlocks(editor.topLevelBlocks, [{ type: "paragraph", content: currentArticle.content || ""}]);
-        }
+        // Using setTimeout to defer the update to the next event loop tick.
+        // This helps prevent a race condition with React's Strict Mode in development
+        // that can cause errors when rapidly replacing content.
+        setTimeout(() => {
+          if (!editor.isMounted) return;
+          try {
+            const blocks = JSON.parse(currentArticle.content || '[]') as Block[];
+            editor.replaceBlocks(editor.topLevelBlocks, blocks);
+          } catch (e) {
+            // If content is not valid JSON, treat it as plain text
+            editor.replaceBlocks(editor.topLevelBlocks, [{ type: "paragraph", content: currentArticle.content || ""}]);
+          }
+        }, 0);
       }
     } else {
       setTitle("");
-      if(editor) editor.replaceBlocks(editor.topLevelBlocks, []);
+      if(editor) {
+        setTimeout(() => {
+          if (!editor.isMounted) return;
+          editor.replaceBlocks(editor.topLevelBlocks, []);
+        }, 0);
+      }
     }
   }, [currentArticle, editor]);
 
