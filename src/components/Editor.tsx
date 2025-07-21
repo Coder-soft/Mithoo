@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
+import { useCreateBlockNote } from "@blocknote/react";
+import { Block, BlockNoteEditor, BlockNoteSchema } from "@blocknote/core";
+import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Bold, Italic, List, Quote, Undo, Redo, Save, Eye, BookOpen, Loader2 } from "lucide-react";
+import { Save, Loader2, Sparkles, FileText, Pilcrow } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
 import { useAI } from "@/hooks/useAI";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface EditorProps {
@@ -15,40 +15,55 @@ interface EditorProps {
   onArticleChange?: (article: Article) => void;
 }
 
+const schema = BlockNoteSchema.create({});
+
 export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
-  const { user } = useAuth();
   const { updateArticle } = useArticle();
-  const { improveArticle, loading } = useAI();
+  const { improveArticle, loading: aiLoading } = useAI();
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+
+  const editor: BlockNoteEditor | null = useCreateBlockNote({
+    schema,
+  });
 
   useEffect(() => {
     if (currentArticle) {
       setTitle(currentArticle.title);
-      setContent(currentArticle.content || "");
-      setWordCount(currentArticle.word_count || 0);
+      if (editor) {
+        try {
+          const blocks = JSON.parse(currentArticle.content || '[]') as Block[];
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        } catch (e) {
+          // If content is not valid JSON, treat it as plain text
+          editor.replaceBlocks(editor.topLevelBlocks, [{ type: "paragraph", content: currentArticle.content || ""}]);
+        }
+      }
+    } else {
+      setTitle("");
+      if(editor) editor.replaceBlocks(editor.topLevelBlocks, []);
     }
-  }, [currentArticle]);
+  }, [currentArticle, editor]);
 
-  const handleContentChange = (value: string) => {
-    setContent(value);
-    const words = value.trim().split(/\s+/).filter(word => word.length > 0).length;
-    setWordCount(words);
-  };
-
-  const handleTitleChange = (value: string) => {
-    setTitle(value);
+  const getWordAndCharCount = (text: string) => {
+    const trimmedText = text.trim();
+    if (!trimmedText) return { words: 0, characters: 0 };
+    const words = trimmedText.split(/\s+/).filter(Boolean).length;
+    const characters = trimmedText.length;
+    return { words, characters };
   };
 
   const handleSave = async () => {
-    if (!currentArticle || !user) return;
+    if (!currentArticle || !editor) return;
+
+    const content = JSON.stringify(editor.topLevelBlocks);
 
     try {
       const updatedArticle = await updateArticle(currentArticle.id, {
         title,
         content,
-        word_count: wordCount
+        word_count: wordCount,
       });
       
       if (updatedArticle && onArticleChange) {
@@ -56,143 +71,100 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
       }
       toast.success('Article saved successfully');
     } catch (error) {
-      // Error handling is done in the hook
+      // Error handling is in the hook
     }
   };
 
   const handleImprove = async () => {
-    if (!currentArticle || !title || !content) return;
+    if (!currentArticle || !editor) return;
+    const content = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
+    if (!content.trim()) return;
 
     try {
       const response = await improveArticle(title, content, currentArticle.id);
-      if (response) {
-        setContent(response.content);
-        setWordCount(response.wordCount || wordCount);
+      if (response && response.content) {
+        // Assuming response.content is markdown, convert it to blocks
+        const blocks = await editor.tryParseMarkdownToBlocks(response.content);
+        editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        toast.success('AI has improved the article!');
       }
     } catch (error) {
-      // Error handling is done in the hook
+      // Error handled in hook
     }
   };
 
-  return (
-    <div className="flex-1 flex flex-col h-full">
-      {/* Editor Header */}
-      <div className="p-6 border-b border-border bg-editor-background">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Badge variant="secondary" className="text-xs">
-              Draft
-            </Badge>
-            <span className="text-sm text-muted-foreground">
-              {wordCount} words
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
-              <Eye className="w-4 h-4 mr-2" />
-              Preview
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleImprove}
-              disabled={loading || !content.trim()}
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <BookOpen className="w-4 h-4 mr-2" />
-              )}
-              Improve
-            </Button>
-            <Button 
-              variant="premium" 
-              size="sm" 
-              className="shadow-subtle"
-              onClick={handleSave}
-              disabled={!currentArticle || loading}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </Button>
-          </div>
+  if (!currentArticle) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-muted/30">
+        <div className="text-center">
+          <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-4 text-lg font-medium">No article selected</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Select an article from the sidebar or create a new one to start writing.</p>
         </div>
-        
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col h-full bg-background text-foreground">
+      <div className="p-4 border-b border-border flex items-center justify-between gap-4">
         <Input
           value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Enter your article title..."
-          className="text-2xl font-bold border-none bg-transparent text-editor-foreground placeholder:text-muted-foreground px-0 focus-visible:ring-0"
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Article Title..."
+          className="text-xl font-semibold border-none bg-transparent focus-visible:ring-0 p-0 h-auto"
+        />
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleImprove}
+            disabled={aiLoading || wordCount === 0}
+          >
+            {aiLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-2" />
+            )}
+            Improve with AI
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={handleSave}
+            disabled={aiLoading}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <BlockNoteView
+          editor={editor}
+          theme="light"
+          className="p-6"
+          onChange={async () => {
+            if (editor) {
+              const text = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
+              const stats = getWordAndCharCount(text);
+              setWordCount(stats.words);
+              setCharCount(stats.characters);
+            }
+          }}
         />
       </div>
 
-      {/* Toolbar */}
-      <div className="p-4 border-b border-border bg-editor-background">
-        <div className="flex items-center space-x-1">
-          <Button variant="ghost" size="sm" className="px-2">
-            <Bold className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="px-2">
-            <Italic className="w-4 h-4" />
-          </Button>
-          <div className="w-px h-6 bg-border mx-2" />
-          <Button variant="ghost" size="sm" className="px-2">
-            <List className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="px-2">
-            <Quote className="w-4 h-4" />
-          </Button>
-          <div className="w-px h-6 bg-border mx-2" />
-          <Button variant="ghost" size="sm" className="px-2">
-            <Undo className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="px-2">
-            <Redo className="w-4 h-4" />
-          </Button>
+      <div className="p-2 border-t border-border text-xs text-muted-foreground flex items-center justify-end gap-4">
+        <div className="flex items-center gap-1">
+          <Pilcrow className="w-3 h-3" />
+          <span>{wordCount} words</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="font-mono text-xs">T</span>
+          <span>{charCount} characters</span>
         </div>
       </div>
-
-      {/* Editor Content */}
-      <div className="flex-1 bg-editor-background">
-        <div className="max-w-4xl mx-auto p-8">
-          <Card className="min-h-[600px] p-8 border-none shadow-none bg-transparent">
-            <Textarea
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Start writing your article... 
-
-You can ask the AI for help with research, outlines, or content suggestions at any time."
-              className="min-h-[500px] border-none resize-none text-base leading-relaxed bg-transparent focus-visible:ring-0 text-editor-foreground placeholder:text-muted-foreground"
-            />
-          </Card>
-        </div>
-      </div>
-
-      {/* AI Suggestions Panel */}
-      {content.length > 50 && (
-        <div className="p-4 border-t border-border bg-muted/30">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-sm font-medium text-foreground mb-2 flex items-center">
-              <BookOpen className="w-4 h-4 mr-2 text-primary" />
-              AI Suggestions
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Card className="p-3 hover:shadow-subtle transition-all cursor-pointer">
-                <p className="text-xs text-muted-foreground mb-1">Research</p>
-                <p className="text-sm font-medium">Add supporting statistics</p>
-              </Card>
-              <Card className="p-3 hover:shadow-subtle transition-all cursor-pointer">
-                <p className="text-xs text-muted-foreground mb-1">Structure</p>
-                <p className="text-sm font-medium">Improve paragraph flow</p>
-              </Card>
-              <Card className="p-3 hover:shadow-subtle transition-all cursor-pointer">
-                <p className="text-xs text-muted-foreground mb-1">Style</p>
-                <p className="text-sm font-medium">Enhance readability</p>
-              </Card>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

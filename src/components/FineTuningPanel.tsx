@@ -55,9 +55,9 @@ export const FineTuningPanel = () => {
   return (
     <Dialog open={showDialog} onOpenChange={setShowDialog}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="relative">
+        <Button variant="ghost" size="sm">
           <Settings className="w-4 h-4 mr-2" />
-          Fine-tune AI
+          <span>Fine-tune AI</span>
           {fineTuningStatus === 'completed' && (
             <Badge variant="secondary" className="ml-2 h-4 text-xs">
               Active
