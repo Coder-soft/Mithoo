@@ -10,18 +10,20 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user, signInAnonymously, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { articles, currentArticle, setCurrentArticle, createArticle, loading: articlesLoading } = useArticle();
   const [showNewArticleDialog, setShowNewArticleDialog] = useState(false);
   const [newArticleTitle, setNewArticleTitle] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user && !authLoading) {
-      signInAnonymously();
+      navigate("/login");
     }
-  }, [user, authLoading, signInAnonymously]);
+  }, [user, authLoading, navigate]);
 
   const handleCreateArticle = async () => {
     if (!newArticleTitle.trim()) return;
@@ -46,12 +48,12 @@ const Index = () => {
     }
   };
 
-  if (!user) {
+  if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-lg font-semibold mb-2">Setting up your workspace...</h2>
-          <p className="text-muted-foreground">Please wait while we initialize Mithoo.</p>
+          <h2 className="text-lg font-semibold mb-2">Loading...</h2>
+          <p className="text-muted-foreground">Please wait while we check your session.</p>
         </div>
       </div>
     );
@@ -113,7 +115,7 @@ const Index = () => {
                 </div>
               </Card>
             ))}
-            {articles.length === 0 && (
+            {articles.length === 0 && !articlesLoading && (
               <p className="text-muted-foreground text-sm text-center py-8">
                 No articles yet. Create your first article to get started!
               </p>

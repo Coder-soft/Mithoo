@@ -24,14 +24,6 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInAnonymously = async () => {
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) {
-      console.error('Error signing in anonymously:', error);
-      throw error;
-    }
-  };
-
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -43,7 +35,6 @@ export const useAuth = () => {
   return {
     user,
     loading,
-    signInAnonymously,
     signOut,
   };
 };
