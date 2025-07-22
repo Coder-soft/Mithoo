@@ -168,7 +168,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background text-foreground">
-      <div className="p-4 border-b border-border flex items-center justify-between gap-4">
+      <div className="p-4 pl-14 border-b border-border flex items-center justify-between gap-4">
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
