@@ -80,9 +80,20 @@ serve(async (req) => {
     const history = (Array.isArray(conversation.messages) ? conversation.messages : [])
       .filter(m => m && typeof m.role === 'string' && typeof m.content === 'string');
 
-    const messages = [...history, { role: 'user', content: message }];
+    const messagesWithNew = [...history, { role: 'user', content: message }];
+
+    // Consolidate consecutive user messages to prevent Gemini API errors
+    const consolidatedMessages = messagesWithNew.reduce((acc, current) => {
+      const last = acc.length > 0 ? acc[acc.length - 1] : null;
+      if (last && last.role === 'user' && current.role === 'user') {
+        last.content = `${last.content}\n\n${current.content}`;
+      } else {
+        acc.push(current);
+      }
+      return acc;
+    }, [] as {role: string, content: string}[]);
     
-    const geminiContents = messages.map(msg => ({
+    const geminiContents = consolidatedMessages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
@@ -106,10 +117,11 @@ serve(async (req) => {
 
     const rawResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I encountered an error.';
 
+    let updatedMessages;
     try {
       const editResponse = JSON.parse(rawResponse);
       if (editResponse.explanation && editResponse.newContent) {
-        const updatedMessages = [...messages, { role: 'assistant', content: editResponse.explanation }]
+        updatedMessages = [...consolidatedMessages, { role: 'assistant', content: editResponse.explanation }]
         await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
         
         return new Response(
@@ -117,12 +129,13 @@ serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+      // If it's valid JSON but not an edit, fall through to treat as normal message
+      updatedMessages = [...consolidatedMessages, { role: 'assistant', content: rawResponse }];
     } catch (e) {
-      // Not an edit, treat as a normal chat message
+      // Not JSON, treat as a normal chat message
+      updatedMessages = [...consolidatedMessages, { role: 'assistant', content: rawResponse }];
     }
 
-    // This block will only be reached if the response was not a valid edit JSON
-    const updatedMessages = [...messages, { role: 'assistant', content: rawResponse }]
     await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
 
     return new Response(
