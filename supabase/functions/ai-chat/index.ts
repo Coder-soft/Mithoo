@@ -117,31 +117,47 @@ serve(async (req) => {
 
     const rawResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I encountered an error.';
 
-    let updatedMessages;
+    let responsePayload: object;
+    let aiMessageContent: string;
+
     try {
-      const editResponse = JSON.parse(rawResponse);
-      if (editResponse.explanation && editResponse.newContent) {
-        updatedMessages = [...consolidatedMessages, { role: 'assistant', content: editResponse.explanation }]
-        await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
-        
-        return new Response(
-          JSON.stringify({ type: 'edit', ...editResponse, conversationId: conversation.id }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+      const parsedResponse = JSON.parse(rawResponse);
+      if (parsedResponse.explanation && parsedResponse.newContent) {
+        // This is a valid edit command
+        aiMessageContent = parsedResponse.explanation;
+        responsePayload = {
+          type: 'edit',
+          explanation: parsedResponse.explanation,
+          newContent: parsedResponse.newContent,
+          conversationId: conversation.id,
+        };
+      } else {
+        // It's some other JSON, treat it as a plain string for the chat history
+        aiMessageContent = rawResponse;
+        responsePayload = {
+          type: 'chat',
+          content: rawResponse,
+          conversationId: conversation.id,
+        };
       }
-      // If it's valid JSON but not an edit, fall through to treat as normal message
-      updatedMessages = [...consolidatedMessages, { role: 'assistant', content: rawResponse }];
     } catch (e) {
-      // Not JSON, treat as a normal chat message
-      updatedMessages = [...consolidatedMessages, { role: 'assistant', content: rawResponse }];
+      // The response was not JSON, treat as a plain string
+      aiMessageContent = rawResponse;
+      responsePayload = {
+        type: 'chat',
+        content: rawResponse,
+        conversationId: conversation.id,
+      };
     }
 
-    await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
+    const updatedMessages = [...consolidatedMessages, { role: 'assistant', content: aiMessageContent }];
+    await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id);
 
     return new Response(
-      JSON.stringify({ type: 'chat', content: rawResponse, conversationId: conversation.id }),
+      JSON.stringify(responsePayload),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
+
   } catch (error) {
     console.error('Error in ai-chat function:', error)
     return new Response(
