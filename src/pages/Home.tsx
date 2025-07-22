@@ -21,6 +21,7 @@ const Home = () => {
   const [newArticleTitle, setNewArticleTitle] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('articles');
+  const [markdownContent, setMarkdownContent] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +42,27 @@ const Home = () => {
     }
   };
 
+  const handleArticleUpdate = async (content: string) => {
+    if (content && currentArticle && updateArticle) {
+      try {
+        const blocks = await markdownToBlocks(content, schema);
+        const contentJSON = JSON.stringify(blocks);
+        const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
+        if (updatedArticle) {
+          setCurrentArticle(updatedArticle);
+          toast.success('Article has been updated by the AI.');
+        }
+      } catch (error) {
+        console.error("Failed to parse markdown from AI:", error);
+        toast.error("AI returned invalid content format. Saving as plain text.");
+        const updatedArticle = await updateArticle(currentArticle.id, { content });
+        if (updatedArticle) {
+          setCurrentArticle(updatedArticle);
+        }
+      }
+    }
+  };
+
   const handleResearchUpdate = async (researchData: any) => {
     if (researchData && currentArticle && updateArticle) {
       const updatedArticle = await updateArticle(currentArticle.id, {
@@ -54,27 +76,6 @@ const Home = () => {
       if (updatedArticle) {
         setCurrentArticle(updatedArticle);
         toast.success('Research data has been updated for the current article.');
-      }
-    }
-  };
-
-  const handleContentGenerated = async (content: string) => {
-    if (content && currentArticle && updateArticle) {
-      try {
-        const blocks = await markdownToBlocks(content, schema);
-        const contentJSON = JSON.stringify(blocks);
-        const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
-        if (updatedArticle) {
-          setCurrentArticle(updatedArticle);
-          toast.success('Article content has been generated and updated.');
-        }
-      } catch (error) {
-        console.error("Failed to parse markdown from AI:", error);
-        toast.error("AI returned invalid content format. Saving as plain text.");
-        const updatedArticle = await updateArticle(currentArticle.id, { content });
-        if (updatedArticle) {
-          setCurrentArticle(updatedArticle);
-        }
       }
     }
   };
@@ -180,7 +181,9 @@ const Home = () => {
                 <ChatSidebar
                   currentArticle={currentArticle}
                   onResearch={handleResearchUpdate}
-                  onGenerate={handleContentGenerated}
+                  onGenerate={handleArticleUpdate}
+                  onEdit={handleArticleUpdate}
+                  articleMarkdown={markdownContent}
                 />
               )}
             </div>
@@ -200,6 +203,7 @@ const Home = () => {
             key={currentArticle?.id || 'no-article'}
             currentArticle={currentArticle}
             onArticleChange={setCurrentArticle}
+            onMarkdownChange={setMarkdownContent}
           />
         </main>
       </div>

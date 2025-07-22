@@ -19,6 +19,8 @@ interface ChatSidebarProps {
   currentArticle?: Article | null;
   onResearch?: (data: any) => void;
   onGenerate?: (content: string) => void;
+  onEdit?: (markdown: string) => void;
+  articleMarkdown?: string;
 }
 
 const AiLoadingIndicator = () => (
@@ -29,7 +31,7 @@ const AiLoadingIndicator = () => (
   </div>
 );
 
-export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSidebarProps) => {
+export const ChatSidebar = ({ currentArticle, onResearch, onGenerate, onEdit, articleMarkdown }: ChatSidebarProps) => {
   const { user } = useAuth();
   const { chatWithAI, researchTopic, generateArticle, loading } = useAI();
   const [messages, setMessages] = useState<Message[]>([
@@ -71,17 +73,28 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
         messageContent, 
         conversationId || undefined, 
         currentArticle?.id,
-        currentArticle?.content
+        articleMarkdown
       );
       
       if (response) {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: response.response,
-          timestamp: new Date()
-        };
-        setMessages(prev => prev.map(msg => msg.id === tempAiMessageId ? aiResponse : msg));
+        if (response.type === 'edit' && onEdit) {
+          onEdit(response.newContent);
+          const aiExplanationMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: response.explanation,
+            timestamp: new Date()
+          };
+          setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? aiExplanationMessage : msg));
+        } else {
+          const aiResponseMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: response.content,
+            timestamp: new Date()
+          };
+          setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? aiResponseMessage : msg));
+        }
         setConversationId(response.conversationId);
       } else {
         throw new Error("No response from AI");
@@ -93,7 +106,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
         content: "Sorry, I couldn't get a response. Please try again.",
         timestamp: new Date()
       };
-      setMessages(prev => prev.map(msg => msg.id === tempAiMessageId ? errorMessage : msg));
+      setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? errorMessage : msg));
     }
   };
 

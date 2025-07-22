@@ -15,9 +15,10 @@ import { schema } from "@/lib/editor-schema";
 interface EditorProps {
   currentArticle?: Article | null;
   onArticleChange?: (article: Article) => void;
+  onMarkdownChange?: (markdown: string) => void;
 }
 
-export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
+export const Editor = ({ currentArticle, onArticleChange, onMarkdownChange }: EditorProps) => {
   const { updateArticle } = useArticle();
   const [title, setTitle] = useState("");
   const [wordCount, setWordCount] = useState(0);
@@ -166,6 +167,9 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
                   const stats = getWordAndCharCount(text);
                   setWordCount(stats.words);
                   setCharCount(stats.characters);
+                  if (onMarkdownChange) {
+                    onMarkdownChange(text);
+                  }
                 }
               }}
             />

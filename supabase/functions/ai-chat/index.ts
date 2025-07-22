@@ -6,10 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a friendly and helpful AI assistant equipped with tools to access and retrieve information from the internet. Your primary goal is to assist users with their questions and tasks in a natural, human-like manner. Use everyday language and avoid technical jargon unless absolutely necessary. Do not use clichéd phrases such as "In this fast-paced digital world." When introducing yourself, always state that you are Mithoo, for example, "Hi, I'm Mithoo, how can I help you?" Maintain proper grammar and punctuation, but use a conversational tone with contractions and informal language where appropriate. Do not use emojis in your responses. Be concise yet informative, and always strive to be as helpful as possible. If asked about your identity, confirm that you are Mithoo. Tailor your responses to the user's needs, ensuring clarity and approachability.
-One of your key capabilities is helping users create articles on topics they provide. When a user requests an article on a specific keyword or topic, you will use your web search and page browsing tools to gather relevant information from reliable sources. Then, you will synthesize this information into a well-structured, informative, and engaging article that reads as if it were written by a human. Ensure that the content is accurate, up-to-date, and properly cited. Strive to produce original content that adds value and insight, rather than simply rehashing existing information. Aim to provide unique perspectives or in-depth analysis where appropriate. Tailor the tone and style of the article to match the user's preferences, if specified. Your writing should be clear, coherent, and meet the user's specifications.
-
-You are Mithoo, an AI assistant specialized in writing well-researched articles in a natural, human-like style. When given keywords, produce an article that demonstrates a deep understanding of the topic, supported by credible information, and presented in an engaging manner. Use a conversational tone, vary your sentence structures, and include personal insights or examples to make the content relatable. Avoid overly formal language, repetitive phrases, and complex jargon.`
+const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a friendly and helpful AI assistant. Your primary goal is to assist users with writing articles.
+When a user asks you to modify the provided article content, your response MUST be a JSON object with this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}.
+If you are just chatting or answering a question, respond with a normal string. Do not use the JSON format for regular conversation.`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversationId, articleId, userId, articleContent } = await req.json()
+    const { message, conversationId, articleId, userId, articleMarkdown } = await req.json()
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -29,7 +28,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Get user's custom API key if available
     let apiKey = Deno.env.get('GEMINI_API_KEY')
     if (userId) {
       const { data: preferences } = await supabaseClient
@@ -40,7 +38,6 @@ serve(async (req) => {
       
       if (preferences?.custom_gemini_key) {
         apiKey = preferences.custom_gemini_key
-        console.log('Using user custom API key')
       }
     }
 
@@ -58,7 +55,7 @@ serve(async (req) => {
     }
 
     let articleContextPrompt = ""
-    if (articleContent) {
+    if (articleMarkdown) {
       let articleTitle = 'Untitled';
       if (articleId) {
         const { data: articleData } = await supabaseClient.from('articles').select('title').eq('id', articleId).single();
@@ -69,12 +66,10 @@ serve(async (req) => {
 
       articleContextPrompt = `
 ---
-The user is currently working on an article titled "${articleTitle}". You have access to its current content. Use this context to provide helpful and relevant assistance. You can answer questions about the content, suggest improvements, or help the user continue writing.
-
-The content is provided as a JSON string from a BlockNote rich-text editor.
+The user is currently working on an article titled "${articleTitle}". Here is the current content in Markdown format.
 
 Current Article Content:
-${articleContent}
+${articleMarkdown}
 ---
 `
     }
@@ -91,7 +86,7 @@ ${articleContent}
           role: msg.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: msg.content }]
         })),
-        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 2048 },
+        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
         systemInstruction: {
           parts: [{
             text: finalSystemPrompt
@@ -101,31 +96,48 @@ ${articleContent}
     })
 
     const geminiData = await geminiResponse.json()
-    console.log('Gemini API Response:', JSON.stringify(geminiData, null, 2));
 
     if (!geminiResponse.ok) {
-      console.error('Gemini API Error:', geminiData?.error?.message || 'Unknown error');
       throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
     }
 
-    let aiResponse;
+    let rawResponse;
     if (!geminiData.candidates || geminiData.candidates.length === 0) {
       const blockReason = geminiData.promptFeedback?.blockReason;
-      aiResponse = `I am unable to provide a response. Reason: ${blockReason || 'Content policy'}. Please try rephrasing your request.`;
-      console.warn('Gemini response blocked:', geminiData.promptFeedback);
+      rawResponse = `I am unable to provide a response. Reason: ${blockReason || 'Content policy'}. Please try rephrasing your request.`;
     } else {
-      aiResponse = geminiData.candidates[0]?.content?.parts[0]?.text || 'I apologize, but I encountered an error generating a response.';
+      rawResponse = geminiData.candidates[0]?.content?.parts[0]?.text || 'I apologize, but I encountered an error generating a response.';
     }
 
-    const updatedMessages = [...messages, { role: 'assistant', content: aiResponse }]
-    
-    await supabaseClient
-      .from('conversations')
-      .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
-      .eq('id', conversation.id)
+    try {
+      const editResponse = JSON.parse(rawResponse);
+      if (editResponse.explanation && editResponse.newContent) {
+        const updatedMessages = [...messages, { role: 'assistant', content: editResponse.explanation }]
+        await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
+        
+        return new Response(
+          JSON.stringify({ 
+            type: 'edit',
+            explanation: editResponse.explanation,
+            newContent: editResponse.newContent,
+            conversationId: conversation.id 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } catch (e) {
+      // Not an edit, treat as a normal chat message
+    }
+
+    const updatedMessages = [...messages, { role: 'assistant', content: rawResponse }]
+    await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
 
     return new Response(
-      JSON.stringify({ response: aiResponse, conversationId: conversation.id }),
+      JSON.stringify({ 
+        type: 'chat',
+        content: rawResponse, 
+        conversationId: conversation.id 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
