@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { markdownToBlocks } from "@blocknote/core";
 import { schema } from "@/lib/editor-schema";
+import { DiffViewerDialog } from "@/components/DiffViewerDialog";
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
@@ -23,6 +24,9 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState('articles');
   const [markdownContent, setMarkdownContent] = useState('');
   const navigate = useNavigate();
+
+  const [isDiffDialogOpen, setIsDiffDialogOpen] = useState(false);
+  const [diffData, setDiffData] = useState<{ old: string; new: string } | null>(null);
 
   useEffect(() => {
     if (!user && !authLoading) {
@@ -42,7 +46,7 @@ const Home = () => {
     }
   };
 
-  const handleArticleUpdate = async (content: string) => {
+  const applyAiChanges = async (content: string) => {
     if (content && currentArticle && updateArticle) {
       try {
         const blocks = await markdownToBlocks(content, schema);
@@ -61,6 +65,19 @@ const Home = () => {
         }
       }
     }
+  };
+
+  const handleAiEdit = (newContent: string) => {
+    setDiffData({ old: markdownContent, new: newContent });
+    setIsDiffDialogOpen(true);
+  };
+
+  const handleAcceptChanges = () => {
+    if (diffData) {
+      applyAiChanges(diffData.new);
+    }
+    setIsDiffDialogOpen(false);
+    setDiffData(null);
   };
 
   const handleResearchUpdate = async (researchData: any) => {
@@ -181,8 +198,8 @@ const Home = () => {
                 <ChatSidebar
                   currentArticle={currentArticle}
                   onResearch={handleResearchUpdate}
-                  onGenerate={handleArticleUpdate}
-                  onEdit={handleArticleUpdate}
+                  onGenerate={applyAiChanges}
+                  onEdit={handleAiEdit}
                   articleMarkdown={markdownContent}
                 />
               )}
@@ -207,6 +224,15 @@ const Home = () => {
           />
         </main>
       </div>
+      {diffData && (
+        <DiffViewerDialog
+          isOpen={isDiffDialogOpen}
+          onClose={() => setIsDiffDialogOpen(false)}
+          oldContent={diffData.old}
+          newContent={diffData.new}
+          onAccept={handleAcceptChanges}
+        />
+      )}
     </div>
   );
 };

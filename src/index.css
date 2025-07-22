@@ -80,3 +80,35 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Styles for React-Diff-Viewer */
+.diff-container {
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+}
+.diff-viewer {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+.diff-viewer table {
+  width: 100%;
+}
+.diff-viewer pre {
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+.diff-viewer .line-prefix {
+  color: hsl(var(--muted-foreground));
+}
+.diff-viewer .diff-added {
+  background-color: hsl(140 80% 95%);
+}
+.diff-viewer .diff-removed {
+  background-color: hsl(0 80% 95%);
+}
+.diff-viewer .diff-gutter-added {
+  background-color: hsl(140 70% 90%);
+}
+.diff-viewer .diff-gutter-removed {
+  background-color: hsl(0 70% 90%);
+}
