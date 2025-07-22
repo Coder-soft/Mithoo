@@ -46,6 +46,10 @@ serve(async (req) => {
       }
     }
 
+    if (!apiKey) {
+      throw new Error("API key not found. Please set GEMINI_API_KEY or provide a custom key in settings.");
+    }
+
     let conversation
     if (conversationId) {
       const { data } = await supabaseClient.from('conversations').select('*').eq('id', conversationId).single()
@@ -56,7 +60,7 @@ serve(async (req) => {
     }
 
     if (!conversation) {
-      return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      throw new Error("Conversation could not be found or created.");
     }
 
     let articleContextPrompt = ""
@@ -73,7 +77,7 @@ serve(async (req) => {
 
     const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}`
 
-    const messages = [...conversation.messages, { role: 'user', content: message }]
+    const messages = [...(conversation.messages || []), { role: 'user', content: message }]
     
     const geminiContents = messages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
@@ -93,13 +97,13 @@ serve(async (req) => {
     const geminiData = await geminiResponse.json()
 
     if (!geminiResponse.ok) {
+      console.error('Gemini API Error:', geminiData);
       throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
     }
 
     const rawResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I encountered an error.';
 
     try {
-      // Check if the response is the special JSON format for edits
       const editResponse = JSON.parse(rawResponse);
       if (editResponse.explanation && editResponse.newContent) {
         const updatedMessages = [...messages, { role: 'assistant', content: editResponse.explanation }]
@@ -114,6 +118,7 @@ serve(async (req) => {
       // Not an edit, treat as a normal chat message
     }
 
+    // This block will only be reached if the response was not a valid edit JSON
     const updatedMessages = [...messages, { role: 'assistant', content: rawResponse }]
     await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
 
