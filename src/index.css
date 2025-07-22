@@ -1,6 +1,18 @@
 @import "@blocknote/core/style.css";
 @import "@blocknote/shadcn/style.css";
 
+.user-prompt {
+  color: white;
+}
+
+.sidebar {
+  background-color: #2d2d2d;
+}
+
+.sidebar-article-name {
+  color: white;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

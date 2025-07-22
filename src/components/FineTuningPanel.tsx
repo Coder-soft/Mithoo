@@ -80,9 +80,8 @@ export const FineTuningPanel = () => {
             <div>
               <label className="text-sm font-medium">Model Name</label>
               <Input
-                value={modelName}
-                onChange={(e) => setModelName(e.target.value)}
-                placeholder="Enter a name for your custom model"
+                value="gemini-2.5-flash"
+                disabled
                 className="mt-1"
               />
             </div>
