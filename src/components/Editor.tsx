@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
 import { Block, BlockNoteEditor, BlockNoteSchema } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
@@ -32,37 +32,11 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
     schema,
   });
 
-  useEffect(() => {
-    if (currentArticle) {
-      setTitle(currentArticle.title);
-      loadArticleFiles();
-      if (editor) {
-        // Using setTimeout to defer the update to the next event loop tick.
-        // This helps prevent a race condition with React's Strict Mode in development
-        // that can cause errors when rapidly replacing content.
-        setTimeout(() => {
-          try {
-            const blocks = JSON.parse(currentArticle.content || '[]') as Block[];
-            editor.replaceBlocks(editor.topLevelBlocks, blocks);
-          } catch (e) {
-            // If content is not valid JSON, treat it as plain text
-            editor.replaceBlocks(editor.topLevelBlocks, [{ type: "paragraph", content: currentArticle.content || ""}]);
-          }
-        }, 0);
-      }
-    } else {
-      setTitle("");
+  const loadArticleFiles = useCallback(async () => {
+    if (!currentArticle) {
       setArticleFiles([]);
-      if(editor) {
-        setTimeout(() => {
-          editor.replaceBlocks(editor.topLevelBlocks, []);
-        }, 0);
-      }
+      return;
     }
-  }, [currentArticle, editor]);
-
-  const loadArticleFiles = async () => {
-    if (!currentArticle) return;
     
     try {
       const { data, error } = await supabase
@@ -76,7 +50,44 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
     } catch (error) {
       console.error('Error loading article files:', error);
     }
-  };
+  }, [currentArticle]);
+
+  useEffect(() => {
+    if (currentArticle) {
+      setTitle(currentArticle.title);
+    } else {
+      setTitle("");
+    }
+    loadArticleFiles();
+
+    if (!editor) {
+      return;
+    }
+
+    // Using setTimeout to defer the update to the next event loop tick.
+    // This helps prevent a race condition with React's Strict Mode in development
+    // that can cause errors when rapidly replacing content.
+    const timeoutId = setTimeout(() => {
+      if (currentArticle) {
+        try {
+          const blocks = JSON.parse(currentArticle.content || '[]') as Block[];
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        } catch (e) {
+          // If content is not valid JSON, treat it as plain text
+          editor.replaceBlocks(editor.topLevelBlocks, [{
+            type: "paragraph",
+            content: currentArticle.content || ""
+          }]);
+        }
+      } else {
+        editor.replaceBlocks(editor.topLevelBlocks, []);
+      }
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [currentArticle, editor, loadArticleFiles]);
 
   const handleFileUploaded = (file: any) => {
     setArticleFiles(prev => [file, ...prev]);
