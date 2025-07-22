@@ -43,12 +43,17 @@ serve(async (req) => {
       }
     }
 
-    let conversationMessages: any[] = [];
+    let conversation
     if (conversationId) {
-      const { data } = await supabaseClient.from('conversations').select('messages').eq('id', conversationId).single()
-      if (data) {
-        conversationMessages = Array.isArray(data.messages) ? data.messages : [];
-      }
+      const { data } = await supabaseClient.from('conversations').select('*').eq('id', conversationId).single()
+      conversation = data
+    } else {
+      const { data } = await supabaseClient.from('conversations').insert({ user_id: user.id, article_id: articleId, messages: [] }).select().single()
+      conversation = data
+    }
+
+    if (!conversation) {
+      return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     let articleContextPrompt = ""
@@ -95,7 +100,7 @@ ${fineTuningData.training_data}
 
     const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}${fineTuningPrompt}`
 
-    const messages = [...conversationMessages, { role: 'user', content: message }]
+    const messages = [...conversation.messages, { role: 'user', content: message }]
     
     const geminiContents = messages
       .filter(msg => msg && typeof msg.content === 'string' && msg.content.trim() !== '')
@@ -104,35 +109,71 @@ ${fineTuningData.training_data}
         parts: [{ text: msg.content }]
       }));
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?key=${apiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: geminiContents,
-        generationConfig: { 
-          temperature: 1,
-          topP: 0.95,
-          topK: 64,
-          maxOutputTokens: 8192,
-          responseMimeType: 'text/plain',
-        },
+        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
         systemInstruction: {
           parts: [{
             text: finalSystemPrompt
           }]
         }
-      })
-    });
+      }),
+    })
+
+    const geminiData = await geminiResponse.json()
 
     if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorText}`);
+      throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
     }
 
-    return new Response(geminiResponse.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream; charset=utf-8" },
-    });
+    let rawResponse;
+    if (!geminiData.candidates || geminiData.candidates.length === 0) {
+      const blockReason = geminiData.promptFeedback?.blockReason;
+      rawResponse = `I am unable to provide a response. Reason: ${blockReason || 'Content policy'}. Please try rephrasing your request.`;
+    } else {
+      rawResponse = geminiData.candidates[0]?.content?.parts[0]?.text || 'I apologize, but I encountered an error generating a response.';
+    }
+
+    let jsonString = rawResponse;
+    const jsonMatch = rawResponse.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      jsonString = jsonMatch[1];
+    }
+
+    try {
+      const editResponse = JSON.parse(jsonString);
+      if (editResponse.explanation && editResponse.newContent) {
+        const updatedMessages = [...messages, { role: 'assistant', content: editResponse.explanation }]
+        await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
+        
+        return new Response(
+          JSON.stringify({ 
+            type: 'edit',
+            explanation: editResponse.explanation,
+            newContent: editResponse.newContent,
+            conversationId: conversation.id 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } catch (e) {
+      // Not an edit, treat as a normal chat message
+    }
+
+    const updatedMessages = [...messages, { role: 'assistant', content: rawResponse }]
+    await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
+
+    return new Response(
+      JSON.stringify({ 
+        type: 'chat',
+        content: rawResponse, 
+        conversationId: conversation.id 
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   } catch (error) {
     console.error('Error in ai-chat function:', error)
     return new Response(
