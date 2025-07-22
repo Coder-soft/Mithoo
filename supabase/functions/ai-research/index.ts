@@ -44,6 +44,29 @@ serve(async (req) => {
       }
     }
 
+    let fineTuningPrompt = ''
+    const { data: fineTuningData } = await supabaseClient
+      .from('fine_tuning_data')
+      .select('training_data')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (fineTuningData && fineTuningData.training_data) {
+      fineTuningPrompt = `
+
+---
+Here is some training data that reflects the user's preferred writing style. Adapt your writing to match this style, tone, and structure.
+
+Training Data:
+${fineTuningData.training_data}
+---
+`
+    }
+    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${fineTuningPrompt}`
+
     const researchPrompt = `Research the following topic online and gather the most current, comprehensive information:
 
 Topic: ${topic}
@@ -76,7 +99,7 @@ Focus on the most current and accurate information available online. Cite source
         generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 4096 },
         systemInstruction: {
           parts: [{
-            text: MITHoo_SYSTEM_PROMPT
+            text: finalSystemPrompt
           }]
         }
       }),

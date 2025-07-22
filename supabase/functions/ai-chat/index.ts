@@ -76,7 +76,29 @@ ${articleMarkdown}
 `
     }
 
-    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}`
+    let fineTuningPrompt = ''
+    const { data: fineTuningData } = await supabaseClient
+      .from('fine_tuning_data')
+      .select('training_data')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (fineTuningData && fineTuningData.training_data) {
+      fineTuningPrompt = `
+
+---
+Here is some training data that reflects the user's preferred writing style. Adapt your writing to match this style, tone, and structure.
+
+Training Data:
+${fineTuningData.training_data}
+---
+`
+    }
+
+    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}${fineTuningPrompt}`
 
     const messages = [...conversation.messages, { role: 'user', content: message }]
     
