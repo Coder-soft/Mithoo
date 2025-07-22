@@ -111,8 +111,14 @@ ${articleMarkdown}
       rawResponse = geminiData.candidates[0]?.content?.parts[0]?.text || 'I apologize, but I encountered an error generating a response.';
     }
 
+    let jsonString = rawResponse;
+    const jsonMatch = rawResponse.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      jsonString = jsonMatch[1];
+    }
+
     try {
-      const editResponse = JSON.parse(rawResponse);
+      const editResponse = JSON.parse(jsonString);
       if (editResponse.explanation && editResponse.newContent) {
         const updatedMessages = [...messages, { role: 'assistant', content: editResponse.explanation }]
         await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
