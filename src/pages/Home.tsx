@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
-import { Editor } from "@/components/Editor";
+import { Editor, type EditorRef } from "@/components/Editor";
 import { useAuth } from "@/hooks/useAuth";
 import { useArticle, Article } from "@/hooks/useArticle";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,6 @@ import { Plus, FileText, ChevronLeft, ChevronRight, Book, Bot } from "lucide-rea
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ChatSidebar } from "@/components/ChatSidebar";
-import { markdownToBlocks } from "@blocknote/core";
-import { schema } from "@/lib/editor-schema";
 import { DiffViewerDialog } from "@/components/DiffViewerDialog";
 
 const Home = () => {
@@ -25,6 +23,7 @@ const Home = () => {
   const [markdownContent, setMarkdownContent] = useState('');
   const navigate = useNavigate();
 
+  const editorRef = useRef<EditorRef>(null);
   const [isDiffDialogOpen, setIsDiffDialogOpen] = useState(false);
   const [diffData, setDiffData] = useState<{ old: string; new: string } | null>(null);
 
@@ -47,10 +46,9 @@ const Home = () => {
   };
 
   const applyAiChanges = async (content: string) => {
-    if (content && currentArticle && updateArticle) {
+    if (content && currentArticle && updateArticle && editorRef.current) {
       try {
-        const blocks = await markdownToBlocks(content, schema);
-        const contentJSON = JSON.stringify(blocks);
+        const contentJSON = await editorRef.current.convertMarkdownToBlocksJSON(content);
         const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
         if (updatedArticle) {
           setCurrentArticle(updatedArticle);
@@ -217,6 +215,7 @@ const Home = () => {
 
         <main className="flex-grow flex flex-col">
           <Editor 
+            ref={editorRef}
             key={currentArticle?.id || 'no-article'}
             currentArticle={currentArticle}
             onArticleChange={setCurrentArticle}

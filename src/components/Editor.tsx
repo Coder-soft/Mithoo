@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
-import { Block, BlockNoteEditor, markdownToBlocks } from "@blocknote/core";
+import { Block, BlockNoteEditor } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,11 @@ interface EditorProps {
   onMarkdownChange?: (markdown: string) => void;
 }
 
-export const Editor = ({ currentArticle, onArticleChange, onMarkdownChange }: EditorProps) => {
+export interface EditorRef {
+  convertMarkdownToBlocksJSON: (markdown: string) => Promise<string>;
+}
+
+export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onArticleChange, onMarkdownChange }, ref) => {
   const { updateArticle } = useArticle();
   const [title, setTitle] = useState("");
   const [wordCount, setWordCount] = useState(0);
@@ -28,6 +32,16 @@ export const Editor = ({ currentArticle, onArticleChange, onMarkdownChange }: Ed
   const editor: BlockNoteEditor | null = useCreateBlockNote({
     schema,
   });
+
+  useImperativeHandle(ref, () => ({
+    async convertMarkdownToBlocksJSON(markdown: string) {
+      if (!editor) {
+        return '[]';
+      }
+      const blocks = await editor.tryParseMarkdownToBlocks(markdown);
+      return JSON.stringify(blocks);
+    }
+  }));
 
   const loadArticleFiles = useCallback(async () => {
     if (!currentArticle) {
@@ -79,7 +93,7 @@ export const Editor = ({ currentArticle, onArticleChange, onMarkdownChange }: Ed
         } catch (e) {
           // If content is not valid JSON, treat it as markdown
           markdown = currentArticle.content || "";
-          const blocks = await markdownToBlocks(markdown, schema);
+          const blocks = await editor.tryParseMarkdownToBlocks(markdown);
           editor.replaceBlocks(editor.topLevelBlocks, blocks);
         }
         const stats = getWordAndCharCount(markdown);
@@ -246,4 +260,4 @@ export const Editor = ({ currentArticle, onArticleChange, onMarkdownChange }: Ed
       </div>
     </div>
   );
-};
+});
