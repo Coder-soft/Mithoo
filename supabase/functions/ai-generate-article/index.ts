@@ -49,6 +49,10 @@ serve(async (req) => {
       }
     }
 
+    if (!apiKey) {
+      throw new Error("Gemini API key is not configured. Please set it in the environment variables or in the user preferences.");
+    }
+
     let fineTuningPrompt = ''
     const { data: fineTuningData } = await supabaseClient
       .from('fine_tuning_data')
@@ -156,7 +160,7 @@ Return the improved version in markdown format.`
   } catch (error) {
     console.error('Error in ai-generate-article function:', error)
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred', details: error.message }),
+      JSON.stringify({ error: 'An unexpected error occurred', details: error.message || 'No specific error message available.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

@@ -47,6 +47,10 @@ serve(async (req) => {
       }
     }
 
+    if (!apiKey) {
+      throw new Error("Gemini API key is not configured. Please set it in the environment variables or in the user preferences.");
+    }
+
     const researchPrompt = `Research the topic: "${topic}". Keywords: ${keywords ? keywords.join(', ') : 'None'}. Provide a detailed summary of your findings.`
 
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
@@ -90,7 +94,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-research function:', error)
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred', details: error.message }),
+      JSON.stringify({ error: 'An unexpected error occurred', details: error.message || 'No specific error message available.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
