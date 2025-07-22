@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -48,7 +48,7 @@ export const ChatDialog = ({
   setConversationId
 }: ChatDialogProps) => {
   const { user } = useAuth();
-  const { chatWithAI, researchTopic, generateArticle, loading } = useAI();
+  const { streamChatWithAI, researchTopic, generateArticle, loading } = useAI();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -58,31 +58,41 @@ export const ChatDialog = ({
     }
   ]);
   const [inputValue, setInputValue] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Reset chat when article changes
   useEffect(() => {
-    setMessages([
-      {
-        id: '1',
-        role: 'assistant',
-        content: "Hello! I'm your AI writing assistant. How can I help with this article?",
-        timestamp: new Date()
-      }
-    ]);
-  }, [currentArticle]);
+    if (isOpen) {
+      setMessages([
+        {
+          id: '1',
+          role: 'assistant',
+          content: "Hello! I'm your AI writing assistant. How can I help with this article?",
+          timestamp: new Date()
+        }
+      ]);
+    }
+  }, [currentArticle, isOpen]);
 
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || loading || !user) return;
     
+    const userMessageContent = inputValue;
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputValue,
+      content: userMessageContent,
       timestamp: new Date()
     };
-    
-    const messageContent = inputValue;
     setInputValue("");
     
     const tempAiMessageId = `temp-ai-${Date.now()}`;
@@ -95,46 +105,60 @@ export const ChatDialog = ({
 
     setMessages(prev => [...prev, userMessage, tempAiMessage]);
     
-    try {
-      const response = await chatWithAI(
-        messageContent, 
-        conversationId || undefined, 
-        currentArticle?.id,
-        articleMarkdown
-      );
-      
-      if (response) {
-        if (response.type === 'edit' && onEdit) {
-          onEdit(response.newContent);
-          const aiExplanationMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: response.explanation,
-            timestamp: new Date()
-          };
-          setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? aiExplanationMessage : msg));
-        } else {
-          const aiResponseMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: response.content,
-            timestamp: new Date()
-          };
-          setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? aiResponseMessage : msg));
+    const onChunk = (chunk: string) => {
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage && lastMessage.id === tempAiMessageId) {
+          // If the content was the loading indicator, replace it. Otherwise, append.
+          const newContent = typeof lastMessage.content === 'string' 
+            ? lastMessage.content + chunk 
+            : chunk;
+          return prev.map(msg => 
+            msg.id === tempAiMessageId 
+              ? { ...msg, content: newContent }
+              : msg
+          );
         }
-        setConversationId(response.conversationId);
-      } else {
-        throw new Error("No response from AI");
+        return prev;
+      });
+    };
+
+    const onComplete = (fullMessage: string, newConversationId: string) => {
+      setConversationId(newConversationId);
+      try {
+        const jsonMatch = fullMessage.match(/```json\s*([\s\S]*?)\s*```/);
+        const jsonString = jsonMatch ? jsonMatch[1] : fullMessage;
+        const parsed = JSON.parse(jsonString);
+        if (parsed.explanation && parsed.newContent && onEdit) {
+          onEdit(parsed.newContent);
+          setMessages(prev => prev.map(msg => 
+            msg.id === tempAiMessageId 
+              ? { ...msg, content: parsed.explanation }
+              : msg
+          ));
+        }
+      } catch (e) {
+        // Not an edit response, message is already complete.
       }
-    } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "Sorry, I couldn't get a response. Please try again.",
-        timestamp: new Date()
-      };
-      setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? errorMessage : msg));
-    }
+    };
+
+    const onError = () => {
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempAiMessageId 
+          ? { ...msg, content: "Sorry, I couldn't get a response. Please try again." }
+          : msg
+      ));
+    };
+
+    await streamChatWithAI(
+      userMessageContent,
+      conversationId,
+      currentArticle?.id || null,
+      articleMarkdown,
+      onChunk,
+      onComplete,
+      onError
+    );
   };
 
   const handleQuickAction = async (action: 'ideas' | 'research' | 'revise') => {
@@ -240,6 +264,7 @@ export const ChatDialog = ({
                   </Card>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
 
