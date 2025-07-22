@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, FileText, ChevronLeft, ChevronRight, Book, Bot, Search } from "lucide-react";
+import { Plus, FileText, ChevronLeft, ChevronRight, Book, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { ChatSidebar } from "@/components/ChatSidebar";
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
-  const { articles, currentArticle, setCurrentArticle, createArticle, loading: articlesLoading } = useArticle();
+  const { articles, currentArticle, setCurrentArticle, createArticle, updateArticle, loading: articlesLoading } = useArticle();
   const [showNewArticleDialog, setShowNewArticleDialog] = useState(false);
   const [newArticleTitle, setNewArticleTitle] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -38,6 +39,33 @@ const Home = () => {
     }
   };
 
+  const handleResearchUpdate = async (researchData: any) => {
+    if (researchData && currentArticle && updateArticle) {
+      const updatedArticle = await updateArticle(currentArticle.id, {
+        research_data: {
+          topic: researchData.topic,
+          keywords: researchData.keywords,
+          data: researchData.research,
+          generated_at: new Date().toISOString()
+        }
+      });
+      if (updatedArticle) {
+        setCurrentArticle(updatedArticle);
+        toast.success('Research data has been updated for the current article.');
+      }
+    }
+  };
+
+  const handleContentGenerated = async (content: string) => {
+    if (content && currentArticle && updateArticle) {
+      const updatedArticle = await updateArticle(currentArticle.id, { content });
+      if (updatedArticle) {
+        setCurrentArticle(updatedArticle);
+        toast.success('Article content has been generated and updated.');
+      }
+    }
+  };
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -52,7 +80,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div className="flex-grow flex">
+      <div className="flex-grow flex overflow-hidden">
         <aside className={`relative bg-muted/20 border-r border-border transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-80' : 'w-0'}`}>
           <div className={`h-full flex flex-col transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
             <div className="p-4 border-b border-border">
@@ -105,9 +133,9 @@ const Home = () => {
               </button>
             </div>
 
-            <div className="flex-grow overflow-y-auto p-4 space-y-2">
+            <div className="flex-grow overflow-y-auto">
               {activeTab === 'articles' && (
-                <>
+                <div className="p-4 space-y-2">
                   {articles.map((article) => (
                     <Card
                       key={article.id}
@@ -133,12 +161,14 @@ const Home = () => {
                       <Button variant="link" size="sm" onClick={() => setShowNewArticleDialog(true)}>Create your first article</Button>
                     </div>
                   )}
-                </>
+                </div>
               )}
               {activeTab === 'chat' && (
-                <div className="text-center py-12">
-                   <p className="text-muted-foreground text-sm">Chat functionality coming soon.</p>
-                </div>
+                <ChatSidebar
+                  currentArticle={currentArticle}
+                  onResearch={handleResearchUpdate}
+                  onGenerate={handleContentGenerated}
+                />
               )}
             </div>
           </div>

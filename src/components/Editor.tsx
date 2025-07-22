@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Loader2, Sparkles, FileText, Pilcrow, Upload } from "lucide-react";
+import { Save, FileText, Pilcrow, Upload } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
-import { useAI } from "@/hooks/useAI";
 import { FileUpload } from "./FileUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -22,7 +21,6 @@ const schema = BlockNoteSchema.create({});
 
 export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
   const { updateArticle } = useArticle();
-  const { improveArticle, loading: aiLoading } = useAI();
   const [title, setTitle] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
@@ -122,24 +120,6 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
     }
   };
 
-  const handleImprove = async () => {
-    if (!currentArticle || !editor) return;
-    const content = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
-    if (!content.trim()) return;
-
-    try {
-      const response = await improveArticle(title, content, currentArticle.id);
-      if (response && response.content) {
-        // Assuming response.content is markdown, convert it to blocks
-        const blocks = await editor.tryParseMarkdownToBlocks(response.content);
-        editor.replaceBlocks(editor.topLevelBlocks, blocks);
-        toast.success('AI has improved the article!');
-      }
-    } catch (error) {
-      // Error handled in hook
-    }
-  };
-
   if (!currentArticle) {
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/30">
@@ -163,22 +143,8 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
         />
         <div className="flex items-center space-x-2">
           <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={handleImprove}
-            disabled={aiLoading || wordCount === 0}
-          >
-            {aiLoading ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2" />
-            )}
-            Improve with AI
-          </Button>
-          <Button 
             size="sm" 
             onClick={handleSave}
-            disabled={aiLoading}
           >
             <Save className="w-4 h-4 mr-2" />
             Save
