@@ -78,11 +78,10 @@ serve(async (req) => {
     const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}`
 
     const history = (Array.isArray(conversation.messages) ? conversation.messages : [])
-      .filter(m => m && typeof m.role === 'string' && typeof m.content === 'string');
+      .filter(m => m && typeof m.role === 'string' && typeof m.content === 'string' && m.content.trim() !== '');
 
     const messagesWithNew = [...history, { role: 'user', content: message }];
 
-    // Consolidate consecutive user messages to prevent Gemini API errors
     const consolidatedMessages = messagesWithNew.reduce((acc, current) => {
       const last = acc.length > 0 ? acc[acc.length - 1] : null;
       if (last && last.role === 'user' && current.role === 'user') {
@@ -104,7 +103,8 @@ serve(async (req) => {
       body: JSON.stringify({
         contents: geminiContents,
         tools: [{ googleSearchRetrieval: {} }],
-        systemInstruction: { parts: [{ text: finalSystemPrompt }] }
+        systemInstruction: { parts: [{ text: finalSystemPrompt }] },
+        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
       }),
     })
 
@@ -115,7 +115,14 @@ serve(async (req) => {
       throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
     }
 
-    const rawResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I encountered an error.';
+    let rawResponse;
+    if (!geminiData.candidates || geminiData.candidates.length === 0) {
+      const blockReason = geminiData.promptFeedback?.blockReason;
+      rawResponse = `I'm sorry, I can't respond to that. Reason: ${blockReason || 'Content policy'}. Please rephrase your message.`;
+      console.warn('Gemini chat blocked:', geminiData.promptFeedback);
+    } else {
+      rawResponse = geminiData.candidates[0]?.content?.parts[0]?.text || 'I apologize, but I encountered an error.';
+    }
 
     let responsePayload: object;
     let aiMessageContent: string;
@@ -123,7 +130,6 @@ serve(async (req) => {
     try {
       const parsedResponse = JSON.parse(rawResponse);
       if (parsedResponse.explanation && parsedResponse.newContent) {
-        // This is a valid edit command
         aiMessageContent = parsedResponse.explanation;
         responsePayload = {
           type: 'edit',
@@ -132,7 +138,6 @@ serve(async (req) => {
           conversationId: conversation.id,
         };
       } else {
-        // It's some other JSON, treat it as a plain string for the chat history
         aiMessageContent = rawResponse;
         responsePayload = {
           type: 'chat',
@@ -141,7 +146,6 @@ serve(async (req) => {
         };
       }
     } catch (e) {
-      // The response was not JSON, treat as a plain string
       aiMessageContent = rawResponse;
       responsePayload = {
         type: 'chat',
