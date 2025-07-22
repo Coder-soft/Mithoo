@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversationId, articleId, userId } = await req.json()
+    const { message, conversationId, articleId, userId, articleContent } = await req.json()
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -57,6 +57,30 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    let articleContextPrompt = ""
+    if (articleContent) {
+      let articleTitle = 'Untitled';
+      if (articleId) {
+        const { data: articleData } = await supabaseClient.from('articles').select('title').eq('id', articleId).single();
+        if (articleData) {
+          articleTitle = articleData.title;
+        }
+      }
+
+      articleContextPrompt = `
+---
+The user is currently working on an article titled "${articleTitle}". You have access to its current content. Use this context to provide helpful and relevant assistance. You can answer questions about the content, suggest improvements, or help the user continue writing.
+
+The content is provided as a JSON string from a BlockNote rich-text editor.
+
+Current Article Content:
+${articleContent}
+---
+`
+    }
+
+    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}`
+
     const messages = [...conversation.messages, { role: 'user', content: message }]
     
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
@@ -70,7 +94,7 @@ serve(async (req) => {
         generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 2048 },
         systemInstruction: {
           parts: [{
-            text: MITHoo_SYSTEM_PROMPT
+            text: finalSystemPrompt
           }]
         }
       }),

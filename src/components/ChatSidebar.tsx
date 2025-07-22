@@ -70,7 +70,8 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
       const response = await chatWithAI(
         messageContent, 
         conversationId || undefined, 
-        currentArticle?.id
+        currentArticle?.id,
+        currentArticle?.content
       );
       
       if (response) {
@@ -241,7 +242,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate }: ChatSide
               <Card className={`p-3 max-w-[calc(100%-3rem)] ${
                 message.role === 'assistant' 
                   ? 'bg-ai-message border-border' 
-                  : 'bg-user-message text-primary-foreground border-primary'
+                  : 'bg-primary text-primary-foreground'
               }`}>
                 <div className="text-sm leading-relaxed">{message.content}</div>
                 <span className="text-xs opacity-70 mt-2 block">

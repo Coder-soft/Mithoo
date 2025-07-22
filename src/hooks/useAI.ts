@@ -7,11 +7,11 @@ export const useAI = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const chatWithAI = async (message: string, conversationId?: string, articleId?: string) => {
+  const chatWithAI = async (message: string, conversationId?: string, articleId?: string, articleContent?: string | null) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message, conversationId, articleId, userId: user?.id }
+        body: { message, conversationId, articleId, userId: user?.id, articleContent }
       });
 
       if (error) throw error;
