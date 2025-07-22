@@ -8,8 +8,9 @@ const corsHeaders = {
 
 const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a helpful AI writing assistant.
 - Your main goal is to help users write and improve articles.
-- When a user asks you to modify the article content provided, your response MUST be a JSON object with this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}.
-- For all other conversation, like answering questions or brainstorming, respond with a normal string. Do not use the JSON format for regular conversation.`
+- When a user asks you to write an article, generate content, or make any changes to the article, your response MUST be a JSON object with this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}.
+- For example, if the user says 'write an article about dogs', you should generate the full article and return it in the 'newContent' field. If the current article is empty, you are creating a new one. If it has content, you are replacing it.
+- For all other conversation, like answering questions or brainstorming that DO NOT involve changing the article, respond with a normal string. Do not use the JSON format for regular conversation.`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
