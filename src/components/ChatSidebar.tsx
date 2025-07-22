@@ -172,18 +172,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate, onEdit, ar
   };
 
   return (
-    <div className="w-80 h-full bg-chat-background border-r border-border flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-semibold text-foreground flex items-center">
-          <Bot className="w-5 h-5 mr-2 text-primary" />
-          AI Assistant
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Plan, research, and write together
-        </p>
-      </div>
-
+    <div className="h-full bg-transparent flex flex-col">
       {/* Quick Actions */}
       <div className="p-4 border-b border-border">
         <div className="grid grid-cols-3 gap-2 mb-3">
@@ -220,7 +209,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate, onEdit, ar
         </div>
         {currentArticle?.title && (
           <Button 
-            variant="premium" 
+            variant="default" 
             size="sm" 
             className="w-full text-xs"
             onClick={handleGenerateFromChat}
@@ -255,7 +244,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate, onEdit, ar
               <Card className={`p-3 max-w-[calc(100%-3rem)] ${
                 message.role === 'assistant' 
                   ? 'bg-ai-message border-border' 
-                  : 'bg-primary text-primary-foreground'
+                  : 'bg-user-message text-primary-foreground'
               }`}>
                 <div className="text-sm leading-relaxed">{message.content}</div>
                 <span className="text-xs opacity-70 mt-2 block">
@@ -273,7 +262,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate, onEdit, ar
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask me anything about your article..."
+            placeholder="Ask me anything..."
             className="flex-1 bg-background"
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />

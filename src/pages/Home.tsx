@@ -7,19 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, FileText, ChevronLeft, ChevronRight, Book, Bot } from "lucide-react";
+import { Plus, FileText, Book, Bot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { DiffViewerDialog } from "@/components/DiffViewerDialog";
+import { cn } from "@/lib/utils";
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
   const { articles, currentArticle, setCurrentArticle, createArticle, updateArticle, loading: articlesLoading } = useArticle();
   const [showNewArticleDialog, setShowNewArticleDialog] = useState(false);
   const [newArticleTitle, setNewArticleTitle] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('articles');
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [activeView, setActiveView] = useState<'articles' | 'chat'>('articles');
   const [markdownContent, setMarkdownContent] = useState('');
   const navigate = useNavigate();
 
@@ -41,7 +42,7 @@ const Home = () => {
       setCurrentArticle(article);
       setNewArticleTitle("");
       setShowNewArticleDialog(false);
-      setActiveTab('articles');
+      setActiveView('articles');
     }
   };
 
@@ -108,16 +109,40 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+      <Header onCreateArticle={() => setShowNewArticleDialog(true)} />
       <div className="flex-grow flex overflow-hidden">
-        <aside className={`relative bg-muted/20 border-r border-border transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-80' : 'w-0'}`}>
-          <div className={`h-full flex flex-col transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="p-4 border-b border-border">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Workspace</h2>
+        {/* Icon Navigation Rail */}
+        <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-muted/30 border-r border-border">
+          <Button 
+            variant={activeView === 'articles' ? 'secondary' : 'ghost'} 
+            size="icon" 
+            onClick={() => setActiveView('articles')}
+            aria-label="Articles"
+          >
+            <Book className="w-5 h-5" />
+          </Button>
+          <Button 
+            variant={activeView === 'chat' ? 'secondary' : 'ghost'} 
+            size="icon" 
+            onClick={() => setActiveView('chat')}
+            aria-label="AI Chat"
+          >
+            <Bot className="w-5 h-5" />
+          </Button>
+        </nav>
+
+        {/* Collapsible Content Panel */}
+        <aside className={cn(
+          "bg-muted/50 border-r border-border transition-all duration-300 ease-in-out",
+          isPanelOpen ? 'w-80' : 'w-0'
+        )}>
+          <div className={cn("h-full flex flex-col", isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-lg font-semibold capitalize">{activeView}</h2>
+              {activeView === 'articles' && (
                 <Dialog open={showNewArticleDialog} onOpenChange={setShowNewArticleDialog}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="ghost">
+                    <Button size="icon" variant="ghost">
                       <Plus className="w-4 h-4" />
                     </Button>
                   </DialogTrigger>
@@ -142,35 +167,19 @@ const Home = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
-              </div>
+              )}
             </div>
-
-            <div className="flex border-b border-border">
-              <button 
-                className={`flex-1 p-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'articles' ? 'bg-muted' : 'hover:bg-muted/50'}`}
-                onClick={() => setActiveTab('articles')}
-              >
-                <Book className="w-4 h-4" />
-                Articles
-              </button>
-              <button 
-                className={`flex-1 p-3 text-sm font-medium flex items-center justify-center gap-2 ${activeTab === 'chat' ? 'bg-muted' : 'hover:bg-muted/50'}`}
-                onClick={() => setActiveTab('chat')}
-              >
-                <Bot className="w-4 h-4" />
-                Chat
-              </button>
-            </div>
-
+            
             <div className="flex-grow overflow-y-auto">
-              {activeTab === 'articles' && (
+              {activeView === 'articles' && (
                 <div className="p-4 space-y-2">
                   {articles.map((article) => (
                     <Card
                       key={article.id}
-                      className={`p-3 cursor-pointer transition-colors hover:bg-accent/80 ${
+                      className={cn(
+                        "p-3 cursor-pointer transition-colors hover:bg-accent/80",
                         currentArticle?.id === article.id ? 'bg-accent' : ''
-                      }`}
+                      )}
                       onClick={() => setCurrentArticle(article)}
                     >
                       <div className="flex items-start space-x-3">
@@ -192,7 +201,7 @@ const Home = () => {
                   )}
                 </div>
               )}
-              {activeTab === 'chat' && (
+              {activeView === 'chat' && (
                 <ChatSidebar
                   currentArticle={currentArticle}
                   onResearch={handleResearchUpdate}
@@ -203,17 +212,17 @@ const Home = () => {
               )}
             </div>
           </div>
+        </aside>
+
+        <main className="flex-grow flex flex-col relative">
           <Button
             variant="outline"
             size="icon"
-            className="absolute top-1/2 -translate-y-1/2 -right-4 z-10 h-8 w-8 rounded-full bg-background hover:bg-muted"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="absolute top-4 left-4 z-10 h-8 w-8"
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
           >
-            {isSidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
           </Button>
-        </aside>
-
-        <main className="flex-grow flex flex-col">
           <Editor 
             ref={editorRef}
             key={currentArticle?.id || 'no-article'}
