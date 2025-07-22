@@ -134,7 +134,7 @@ const Home = () => {
         {/* Collapsible Content Panel */}
         <aside className={cn(
           "bg-muted/50 border-r border-border transition-all duration-300 ease-in-out",
-          isPanelOpen ? 'w-80' : 'w-0'
+          isPanelOpen ? 'w-96' : 'w-0'
         )}>
           <div className={cn("h-full flex flex-col", isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
             <div className="p-4 border-b border-border flex items-center justify-between">
