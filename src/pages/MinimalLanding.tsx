@@ -36,11 +36,8 @@ const MinimalLanding = () => {
             <h1 className="text-xl font-bold text-foreground">Mithoo</h1>
           </Link>
           <div className="flex items-center space-x-2">
-            <Button asChild variant="ghost">
-              <Link to="/login">Log In</Link>
-            </Button>
             <Button asChild>
-              <Link to="/login">Get Started</Link>
+              <Link to="/login">Apply for Beta Testing</Link>
             </Button>
           </div>
         </div>
@@ -57,7 +54,7 @@ const MinimalLanding = () => {
           <div className="mt-8">
             <Button asChild size="lg">
               <Link to="/login">
-                Get Started for Free
+                Apply for Beta Testing
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
