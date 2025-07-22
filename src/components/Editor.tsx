@@ -49,6 +49,14 @@ export const Editor = ({ currentArticle, onArticleChange, onMarkdownChange }: Ed
     }
   }, [currentArticle]);
 
+  const getWordAndCharCount = (text: string) => {
+    const trimmedText = text.trim();
+    if (!trimmedText) return { words: 0, characters: 0 };
+    const words = trimmedText.split(/\s+/).filter(Boolean).length;
+    const characters = trimmedText.length;
+    return { words, characters };
+  };
+
   useEffect(() => {
     if (currentArticle) {
       setTitle(currentArticle.title);
@@ -63,34 +71,40 @@ export const Editor = ({ currentArticle, onArticleChange, onMarkdownChange }: Ed
 
     const timeoutId = setTimeout(async () => {
       if (currentArticle) {
+        let markdown = "";
         try {
           const blocks = JSON.parse(currentArticle.content || '[]') as Block[];
           editor.replaceBlocks(editor.topLevelBlocks, blocks);
+          markdown = await editor.blocksToMarkdownLossy(blocks);
         } catch (e) {
           // If content is not valid JSON, treat it as markdown
-          const blocks = await markdownToBlocks(currentArticle.content || "", schema);
+          markdown = currentArticle.content || "";
+          const blocks = await markdownToBlocks(markdown, schema);
           editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        }
+        const stats = getWordAndCharCount(markdown);
+        setWordCount(stats.words);
+        setCharCount(stats.characters);
+        if (onMarkdownChange) {
+          onMarkdownChange(markdown);
         }
       } else {
         editor.replaceBlocks(editor.topLevelBlocks, []);
+        setWordCount(0);
+        setCharCount(0);
+        if (onMarkdownChange) {
+          onMarkdownChange("");
+        }
       }
     }, 0);
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [currentArticle, editor, loadArticleFiles]);
+  }, [currentArticle, editor, loadArticleFiles, onMarkdownChange]);
 
   const handleFileUploaded = (file: any) => {
     setArticleFiles(prev => [file, ...prev]);
-  };
-
-  const getWordAndCharCount = (text: string) => {
-    const trimmedText = text.trim();
-    if (!trimmedText) return { words: 0, characters: 0 };
-    const words = trimmedText.split(/\s+/).filter(Boolean).length;
-    const characters = trimmedText.length;
-    return { words, characters };
   };
 
   const handleSave = async () => {
