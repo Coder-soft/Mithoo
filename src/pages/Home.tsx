@@ -283,7 +283,7 @@ const Home = () => {
             ref={editorRef}
             key={currentArticle?.id || 'no-article'}
             currentArticle={currentArticle}
-            onArticleUpdate={onArticleUpdate}
+            onArticleChange={onArticleUpdate}
             onMarkdownChange={setMarkdownContent}
           />
         </main>

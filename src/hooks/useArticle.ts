@@ -112,7 +112,7 @@ export const useArticle = () => {
       setArticles(prev => prev.filter(article => article.id !== id));
       
       toast.success('Article deleted successfully');
-    } catch (error) {
+    } catch (error)
       console.error('Error deleting article:', error);
       toast.error('Failed to delete article');
     }

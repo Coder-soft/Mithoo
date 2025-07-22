@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 interface EditorProps {
   currentArticle?: Article | null;
-  onArticleUpdate?: (article: Article) => void;
+  onArticleChange?: (article: Article) => void;
   onMarkdownChange?: (markdown: string) => void;
 }
 
@@ -21,7 +21,7 @@ export interface EditorRef {
   convertMarkdownToBlocksJSON: (markdown: string) => Promise<string>;
 }
 
-export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onArticleUpdate, onMarkdownChange }, ref) => {
+export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onArticleChange, onMarkdownChange }, ref) => {
   const { updateArticle } = useArticle();
   const [title, setTitle] = useState("");
   const [wordCount, setWordCount] = useState(0);
@@ -130,8 +130,8 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
         word_count: wordCount,
       });
       
-      if (updatedArticle && onArticleUpdate) {
-        onArticleUpdate(updatedArticle);
+      if (updatedArticle && onArticleChange) {
+        onArticleChange(updatedArticle);
       }
       toast.success('Article saved successfully');
     } catch (error) {

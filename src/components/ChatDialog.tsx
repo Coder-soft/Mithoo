@@ -8,6 +8,7 @@ import { useAI } from "@/hooks/useAI";
 import { useAuth } from "@/hooks/useAuth";
 import { Article } from "@/hooks/useArticle";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -257,7 +258,10 @@ export const ChatDialog = ({
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                     {message.role === 'assistant' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </div>
-                  <Card className={`p-3 max-w-[calc(100%-3rem)] ${message.role === 'assistant' ? 'bg-ai-message border-border' : 'bg-secondary'}`}>
+                  <Card className={cn(
+                    "p-3 max-w-[calc(100%-3rem)]",
+                    message.role === 'assistant' ? 'bg-ai-message border-border' : 'bg-secondary user-prompt'
+                  )}>
                     <div className="text-sm leading-relaxed break-words">{message.content}</div>
                     <span className="text-xs opacity-70 mt-2 block">
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
