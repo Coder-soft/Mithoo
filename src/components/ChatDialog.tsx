@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -58,6 +58,7 @@ export const ChatDialog = ({
     }
   ]);
   const [inputValue, setInputValue] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Reset chat when article changes
   useEffect(() => {
@@ -70,6 +71,10 @@ export const ChatDialog = ({
       }
     ]);
   }, [currentArticle]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
 
   const handleSendMessage = async () => {
@@ -229,7 +234,7 @@ export const ChatDialog = ({
 
           {/* Messages */}
           <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+            <div className="space-y-4 pr-4">
               {messages.map((message) => (
                 <div key={message.id} className="flex items-start space-x-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
@@ -243,6 +248,7 @@ export const ChatDialog = ({
                   </Card>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
 

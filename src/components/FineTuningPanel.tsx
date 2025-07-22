@@ -13,7 +13,7 @@ export const FineTuningPanel = () => {
   const { fineTuneModel, loading } = useAI();
   const [showDialog, setShowDialog] = useState(false);
   const [trainingData, setTrainingData] = useState("");
-  const [modelName, setModelName] = useState("mithoo-custom-model");
+  const modelName = "gemini-2.5-flash";
   const [fineTuningStatus, setFineTuningStatus] = useState<'idle' | 'training' | 'completed' | 'error'>('idle');
 
   const handleFineTuning = async () => {
@@ -69,7 +69,7 @@ export const FineTuningPanel = () => {
         <DialogHeader>
           <DialogTitle>Fine-tune AI Model</DialogTitle>
           <DialogDescription>
-            Fine-tuning customizes the powerful Gemini 1.5 Pro model to match your unique writing style. 
+            Fine-tuning customizes the powerful gemini-2.5-flash model to match your unique writing style. 
             Provide examples of your best writing, and the AI will learn to emulate your tone, 
             structure, and approach for more personalized content generation.
           </DialogDescription>
