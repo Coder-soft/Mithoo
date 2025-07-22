@@ -32,9 +32,10 @@ export const useAI = () => {
 
       if (error) throw error;
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI chat:', error);
-      toast.error('Failed to get AI response');
+      const errorMessage = error.context?.details || 'An unknown error occurred. Please try again.';
+      toast.error(`AI Chat Error: ${errorMessage}`);
       throw error;
     } finally {
       setLoading(false);
@@ -51,9 +52,10 @@ export const useAI = () => {
       if (error) throw error;
       toast.success('Research completed successfully');
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI research:', error);
-      toast.error('Failed to complete research');
+      const errorMessage = error.context?.details || 'An unknown error occurred. Please try again.';
+      toast.error(`AI Research Error: ${errorMessage}`);
       throw error;
     } finally {
       setLoading(false);
@@ -70,9 +72,10 @@ export const useAI = () => {
       if (error) throw error;
       toast.success('Article generated successfully');
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating article:', error);
-      toast.error('Failed to generate article');
+      const errorMessage = error.context?.details || 'An unknown error occurred. Please try again.';
+      toast.error(`Article Generation Error: ${errorMessage}`);
       throw error;
     } finally {
       setLoading(false);
@@ -89,9 +92,10 @@ export const useAI = () => {
       if (error) throw error;
       toast.success('Article improved successfully');
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error improving article:', error);
-      toast.error('Failed to improve article');
+      const errorMessage = error.context?.details || 'An unknown error occurred. Please try again.';
+      toast.error(`Article Improvement Error: ${errorMessage}`);
       throw error;
     } finally {
       setLoading(false);
@@ -108,9 +112,10 @@ export const useAI = () => {
       if (error) throw error;
       toast.success('Fine-tuning completed successfully');
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fine-tuning model:', error);
-      toast.error('Failed to fine-tune model');
+      const errorMessage = error.context?.details || 'An unknown error occurred. Please try again.';
+      toast.error(`Fine-Tuning Error: ${errorMessage}`);
       throw error;
     } finally {
       setLoading(false);
