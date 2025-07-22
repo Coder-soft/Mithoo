@@ -77,7 +77,10 @@ serve(async (req) => {
 
     const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}`
 
-    const messages = [...(conversation.messages || []), { role: 'user', content: message }]
+    const history = (Array.isArray(conversation.messages) ? conversation.messages : [])
+      .filter(m => m && typeof m.role === 'string' && typeof m.content === 'string');
+
+    const messages = [...history, { role: 'user', content: message }];
     
     const geminiContents = messages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
