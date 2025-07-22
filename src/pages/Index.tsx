@@ -140,6 +140,7 @@ const Index = () => {
           onGenerate={handleContentGenerated}
         />
         <Editor 
+          key={currentArticle?.id || 'no-article'}
           currentArticle={currentArticle}
           onArticleChange={setCurrentArticle}
         />

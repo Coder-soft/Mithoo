@@ -154,6 +154,7 @@ const Home = () => {
 
         <main className="flex-grow flex flex-col">
           <Editor 
+            key={currentArticle?.id || 'no-article'}
             currentArticle={currentArticle}
             onArticleChange={setCurrentArticle}
           />
