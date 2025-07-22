@@ -6,11 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a helpful AI writing assistant.
-- Your main goal is to help users write and improve articles.
-- When a user asks you to write an article, generate content, or make any changes to the article, your response MUST be a JSON object with this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}.
-- For example, if the user says 'write an article about dogs', you should generate the full article and return it in the 'newContent' field. If the current article is empty, you are creating a new one. If it has content, you are replacing it.
-- For all other conversation, like answering questions or brainstorming that DO NOT involve changing the article, respond with a normal string. Do not use the JSON format for regular conversation.`
+const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a helpful AI writing assistant. Your goal is to help users write and improve articles through conversation. Engage in brainstorming, answer questions, and provide suggestions. When asked to make a change to the article, you MUST respond with a JSON object with this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}. For all other conversation, respond with a normal string.`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -65,61 +61,24 @@ serve(async (req) => {
           articleTitle = articleData.title;
         }
       }
-
-      articleContextPrompt = `
----
-The user is currently working on an article titled "${articleTitle}". Here is the current content in Markdown format.
-
-Current Article Content:
-${articleMarkdown}
----
-`
+      articleContextPrompt = `\n---Current Article Context ("${articleTitle}")---\n${articleMarkdown}\n---End Context---`
     }
 
-    let fineTuningPrompt = ''
-    const { data: fineTuningData } = await supabaseClient
-      .from('fine_tuning_data')
-      .select('training_data')
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (fineTuningData && fineTuningData.training_data) {
-      fineTuningPrompt = `
-
----
-Here is some training data that reflects the user's preferred writing style. Adapt your writing to match this style, tone, and structure.
-
-Training Data:
-${fineTuningData.training_data}
----
-`
-    }
-
-    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}${fineTuningPrompt}`
+    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}`
 
     const messages = [...conversation.messages, { role: 'user', content: message }]
     
-    const geminiContents = messages
-      .filter(msg => msg && typeof msg.content === 'string' && msg.content.trim() !== '')
-      .map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }));
+    const geminiContents = messages.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    }));
 
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: geminiContents,
-        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
-        systemInstruction: {
-          parts: [{
-            text: finalSystemPrompt
-          }]
-        }
+        systemInstruction: { parts: [{ text: finalSystemPrompt }] }
       }),
     })
 
@@ -129,33 +88,17 @@ ${fineTuningData.training_data}
       throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
     }
 
-    let rawResponse;
-    if (!geminiData.candidates || geminiData.candidates.length === 0) {
-      const blockReason = geminiData.promptFeedback?.blockReason;
-      rawResponse = `I am unable to provide a response. Reason: ${blockReason || 'Content policy'}. Please try rephrasing your request.`;
-    } else {
-      rawResponse = geminiData.candidates[0]?.content?.parts[0]?.text || 'I apologize, but I encountered an error generating a response.';
-    }
-
-    let jsonString = rawResponse;
-    const jsonMatch = rawResponse.match(/```json\s*([\s\S]*?)\s*```/);
-    if (jsonMatch && jsonMatch[1]) {
-      jsonString = jsonMatch[1];
-    }
+    const rawResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I encountered an error.';
 
     try {
-      const editResponse = JSON.parse(jsonString);
+      // Check if the response is the special JSON format for edits
+      const editResponse = JSON.parse(rawResponse);
       if (editResponse.explanation && editResponse.newContent) {
         const updatedMessages = [...messages, { role: 'assistant', content: editResponse.explanation }]
         await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
         
         return new Response(
-          JSON.stringify({ 
-            type: 'edit',
-            explanation: editResponse.explanation,
-            newContent: editResponse.newContent,
-            conversationId: conversation.id 
-          }),
+          JSON.stringify({ type: 'edit', ...editResponse, conversationId: conversation.id }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -167,11 +110,7 @@ ${fineTuningData.training_data}
     await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id)
 
     return new Response(
-      JSON.stringify({ 
-        type: 'chat',
-        content: rawResponse, 
-        conversationId: conversation.id 
-      }),
+      JSON.stringify({ type: 'chat', content: rawResponse, conversationId: conversation.id }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

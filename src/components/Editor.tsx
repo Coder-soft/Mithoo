@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, FileText, Pilcrow, Upload, Search, Bot, Loader2 } from "lucide-react";
+import { Save, FileText, Pilcrow, Upload, Search, Bot, Loader2, Link as LinkIcon } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
 import { useAI } from "@/hooks/useAI";
 import { FileUpload } from "./FileUpload";
@@ -114,21 +114,14 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
     if (!currentArticle || !researchQuery) return;
     const researchResult = await researchTopic(researchQuery, [], currentArticle.id);
     if (researchResult) {
-      const updated = await updateArticle(currentArticle.id, {
-        research_data: {
-          topic: researchResult.topic,
-          keywords: researchResult.keywords,
-          data: researchResult.research,
-          generated_at: new Date().toISOString()
-        }
-      });
+      const updated = await updateArticle(currentArticle.id, { research_data: researchResult });
       if (updated) onArticleUpdate(updated);
     }
   };
 
   const handleGenerate = async () => {
     if (!currentArticle) return;
-    const researchData = currentArticle.research_data?.data;
+    const researchData = currentArticle.research_data?.research;
     if (!researchData) {
       toast.error("Please conduct research before generating an article.");
       return;
@@ -181,7 +174,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
             }} />
           </TabsContent>
 
-          <TabsContent value="research" className="flex-1 mt-0 p-6 space-y-4">
+          <TabsContent value="research" className="flex-1 mt-0 p-6 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="research-query">Research Topic</Label>
               <div className="flex gap-2">
@@ -192,10 +185,23 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Research Results</Label>
-              <Textarea value={currentArticle.research_data?.data || "No research conducted yet."} readOnly className="h-64 bg-muted/50" />
+              <Label>Research Summary</Label>
+              <Textarea value={currentArticle.research_data?.research || "No research conducted yet."} readOnly className="h-64 bg-muted/50" />
             </div>
-            <Button onClick={handleGenerate} disabled={aiLoading || !currentArticle.research_data?.data}>
+            {currentArticle.research_data?.sources?.length > 0 && (
+              <div className="space-y-2">
+                <Label>Sources Found</Label>
+                <div className="p-4 border rounded-md bg-muted/50 space-y-2">
+                  {currentArticle.research_data.sources.map((source: any, index: number) => (
+                    <a key={index} href={source.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+                      <LinkIcon className="w-4 h-4" />
+                      <span>{source.title}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button onClick={handleGenerate} disabled={aiLoading || !currentArticle.research_data?.research}>
               {aiLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bot className="w-4 h-4 mr-2" />}
               Generate Article from Research
             </Button>
