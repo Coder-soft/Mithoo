@@ -246,7 +246,7 @@ export const ChatSidebar = ({ currentArticle, onResearch, onGenerate, onEdit, ar
                   ? 'bg-ai-message border-border' 
                   : 'bg-user-message text-primary-foreground'
               }`}>
-                <div className="text-sm leading-relaxed">{message.content}</div>
+                <div className="text-sm leading-relaxed break-words">{message.content}</div>
                 <span className="text-xs opacity-70 mt-2 block">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
