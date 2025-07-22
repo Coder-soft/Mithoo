@@ -22,6 +22,10 @@ const Home = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [activeView, setActiveView] = useState<'articles' | 'chat'>('articles');
   const [markdownContent, setMarkdownContent] = useState('');
+  // live word count based on current markdown content
+  const liveWordCount = markdownContent.trim().length
+    ? markdownContent.trim().split(/\s+/).filter(Boolean).length
+    : 0;
   const navigate = useNavigate();
 
   const editorRef = useRef<EditorRef>(null);
@@ -133,7 +137,7 @@ const Home = () => {
 
         {/* Collapsible Content Panel */}
         <aside className={cn(
-          "bg-muted/50 border-r border-border transition-all duration-300 ease-in-out",
+          "bg-muted/50 border-r border-border transition-all duration-300 ease-in-out flex-shrink-0",
           isPanelOpen ? 'w-96' : 'w-0'
         )}>
           <div className={cn("h-full flex flex-col", isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
@@ -183,11 +187,11 @@ const Home = () => {
                       onClick={() => setCurrentArticle(article)}
                     >
                       <div className="flex items-start space-x-3">
-                        <FileText className="w-4 h-4 mt-1 text-muted-foreground" />
+                        <FileText className="w-4 h-4 mt-1 text-white" />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium truncate text-sm">{article.title}</h4>
-                          <p className="text-xs text-muted-foreground">
-                            {article.word_count || 0} words
+                          <p className="text-xs text-white">
+                            {article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words
                           </p>
                         </div>
                       </div>
