@@ -74,9 +74,9 @@ export const FineTuningPanel = () => {
           <div>
             <h3 className="text-sm font-medium mb-2">About Fine-tuning</h3>
             <p className="text-sm text-muted-foreground">
-              Fine-tuning allows you to customize the AI to match your writing style. 
+              Fine-tuning customizes the powerful Gemini 1.5 Pro model to match your unique writing style. 
               Provide examples of your best writing, and the AI will learn to emulate your tone, 
-              structure, and approach.
+              structure, and approach for more personalized content generation.
             </p>
           </div>
 
