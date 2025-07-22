@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { trainingData, modelName = 'custom-mithoo-model' } = await req.json()
+    const { trainingData, modelName = 'custom-mithoo-model', userId } = await req.json()
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, keywords, articleId } = await req.json()
+    const { topic, keywords, articleId, userId } = await req.json()
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -24,23 +24,51 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    const researchPrompt = `Please research the topic: "${topic}" with focus on these keywords: ${keywords.join(', ')}.
+    // Get user's custom API key if available
+    let apiKey = Deno.env.get('GEMINI_API_KEY')
+    if (userId) {
+      const { data: preferences } = await supabaseClient
+        .from('user_preferences')
+        .select('custom_gemini_key')
+        .eq('user_id', userId)
+        .single()
+      
+      if (preferences?.custom_gemini_key) {
+        apiKey = preferences.custom_gemini_key
+        console.log('Using user custom API key')
+      }
+    }
 
-Provide:
-1. Key statistics and facts
-2. Current trends and developments
-3. Expert opinions and insights
-4. Supporting evidence and sources
-5. Different perspectives on the topic
+    const researchPrompt = `Research the following topic online and gather the most current, comprehensive information:
 
-Format your response as structured research data that can be used for article writing.`
+Topic: ${topic}
+Keywords: ${keywords ? keywords.join(', ') : 'None provided'}
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
+Please search for and provide:
+1. Latest facts, statistics, and data
+2. Recent developments, news, and trends (within the last year)
+3. Expert opinions and authoritative sources
+4. Relevant examples, case studies, and real-world applications
+5. Current market insights, challenges, and opportunities
+6. Recent research papers or studies
+7. Industry perspectives and future outlook
+
+Focus on the most current and accurate information available online. Cite sources where possible and prioritize authoritative, recent content.`
+
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: researchPrompt }] }],
-        generationConfig: { temperature: 0.3, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
+        contents: [{ parts: [{ text: researchPrompt }] }],
+        tools: [{
+          googleSearchRetrieval: {
+            dynamicRetrievalConfig: {
+              mode: "MODE_DYNAMIC",
+              dynamicThreshold: 0.7
+            }
+          }
+        }],
+        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 4096 },
         systemInstruction: {
           parts: [{
             text: `You are a professional research assistant specializing in gathering comprehensive information for article writing. Provide detailed, accurate, and well-structured research on any given topic. Focus on:

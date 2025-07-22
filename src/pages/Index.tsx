@@ -62,7 +62,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header onCreateArticle={handleCreateArticle} />
       <div className="h-[calc(100vh-4rem)] flex">
         {/* Sidebar for articles */}
         <div className={`relative bg-muted/30 border-r border-border transition-all duration-300 ease-in-out ${isArticleSidebarOpen ? 'w-64' : 'w-0'}`}>

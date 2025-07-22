@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "./useAuth";
 
 export const useAI = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const chatWithAI = async (message: string, conversationId?: string, articleId?: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message, conversationId, articleId }
+        body: { message, conversationId, articleId, userId: user?.id }
       });
 
       if (error) throw error;
@@ -27,7 +29,7 @@ export const useAI = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-research', {
-        body: { topic, keywords, articleId }
+        body: { topic, keywords, articleId, userId: user?.id }
       });
 
       if (error) throw error;
@@ -46,7 +48,7 @@ export const useAI = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-generate-article', {
-        body: { title, outline, researchData, articleId, action: 'generate' }
+        body: { title, outline, researchData, articleId, action: 'generate', userId: user?.id }
       });
 
       if (error) throw error;
@@ -65,7 +67,7 @@ export const useAI = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-generate-article', {
-        body: { title, outline: content, articleId, action: 'improve' }
+        body: { title, outline: content, articleId, action: 'improve', userId: user?.id }
       });
 
       if (error) throw error;
@@ -84,7 +86,7 @@ export const useAI = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-fine-tune', {
-        body: { trainingData, modelName }
+        body: { trainingData, modelName, userId: user?.id }
       });
 
       if (error) throw error;

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, outline, researchData, articleId, action = 'generate' } = await req.json()
+    const { title, outline, researchData, articleId, action = 'generate', userId } = await req.json()
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -22,6 +22,21 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
+    // Get user's custom API key if available
+    let apiKey = Deno.env.get('GEMINI_API_KEY')
+    if (userId) {
+      const { data: preferences } = await supabaseClient
+        .from('user_preferences')
+        .select('custom_gemini_key')
+        .eq('user_id', userId)
+        .single()
+      
+      if (preferences?.custom_gemini_key) {
+        apiKey = preferences.custom_gemini_key
+        console.log('Using user custom API key')
+      }
     }
 
     let prompt = ''
@@ -56,7 +71,7 @@ Focus on:
 Return the improved version in markdown format.`
     }
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

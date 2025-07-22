@@ -1,11 +1,16 @@
-import { PenTool, LogOut, Settings } from "lucide-react";
+import { PenTool, LogOut, Settings, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FineTuningPanel } from "./FineTuningPanel";
+import { UserPreferences } from "./UserPreferences";
 
-export const Header = () => {
+interface HeaderProps {
+  onCreateArticle?: () => void;
+}
+
+export const Header = ({ onCreateArticle }: HeaderProps) => {
   const { user, signOut } = useAuth();
 
   return (
@@ -20,7 +25,14 @@ export const Header = () => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          {onCreateArticle && (
+            <Button onClick={onCreateArticle} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              New Article
+            </Button>
+          )}
+          <UserPreferences />
           <FineTuningPanel />
           {user && (
             <DropdownMenu>
