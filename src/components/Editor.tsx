@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 interface EditorProps {
   currentArticle?: Article | null;
-  onArticleChange?: (article: Article) => void;
+  onArticleUpdate?: (article: Article) => void;
   onMarkdownChange?: (markdown: string) => void;
 }
 
@@ -21,7 +21,7 @@ export interface EditorRef {
   convertMarkdownToBlocksJSON: (markdown: string) => Promise<string>;
 }
 
-export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onArticleChange, onMarkdownChange }, ref) => {
+export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onArticleUpdate, onMarkdownChange }, ref) => {
   const { updateArticle } = useArticle();
   const [title, setTitle] = useState("");
   const [wordCount, setWordCount] = useState(0);
@@ -130,8 +130,8 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
         word_count: wordCount,
       });
       
-      if (updatedArticle && onArticleChange) {
-        onArticleChange(updatedArticle);
+      if (updatedArticle && onArticleUpdate) {
+        onArticleUpdate(updatedArticle);
       }
       toast.success('Article saved successfully');
     } catch (error) {
@@ -152,8 +152,8 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background text-foreground">
-      <div className="p-4 pl-14 border-b border-border flex items-center justify-between gap-4">
+    <div className="flex-1 flex flex-col h-full bg-background text-foreground overflow-hidden">
+      <div className="p-4 pl-14 border-b border-border flex items-center justify-between gap-4 flex-shrink-0">
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -245,7 +245,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
         </Tabs>
       </div>
 
-      <div className="p-2 border-t border-border text-xs text-muted-foreground flex items-center justify-end gap-4">
+      <div className="p-2 border-t border-border text-xs text-muted-foreground flex items-center justify-end gap-4 flex-shrink-0">
         <div className="flex items-center gap-1">
           <Pilcrow className="w-3 h-3" />
           <span>{wordCount} words</span>

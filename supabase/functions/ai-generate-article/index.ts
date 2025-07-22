@@ -69,10 +69,11 @@ ${fineTuningData.training_data}
 
     let prompt = ''
     if (action === 'generate') {
-      prompt = `Write a comprehensive article with the title: "${title}"
+      prompt = `First, perform a comprehensive web search on the topic: "${title}".
+Then, write a comprehensive article with the title: "${title}"
 
 ${outline ? `Follow this outline:\n${outline}\n` : ''}
-${researchData ? `Use this research data:\n${researchData}\n` : ''}
+${researchData ? `Use this existing research data as a starting point, but feel free to supplement it with your own search:\n${researchData}\n` : ''}
 
 Requirements:
 1. Create engaging and informative content
@@ -99,11 +100,19 @@ Focus on:
 Return the improved version in markdown format.`
     }
 
-            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        tools: [{
+          googleSearchRetrieval: {
+            dynamicRetrievalConfig: {
+              mode: "MODE_DYNAMIC",
+              dynamicThreshold: 0.7
+            }
+          }
+        }],
         generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
         systemInstruction: {
           parts: [{

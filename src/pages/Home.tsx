@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Plus, FileText, Book, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Plus, FileText, Book, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ChatDialog } from "@/components/ChatDialog";
@@ -16,11 +16,16 @@ import { cn } from "@/lib/utils";
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
-  const { articles, currentArticle, setCurrentArticle, createArticle, updateArticle, loading: articlesLoading } = useArticle();
+  const { articles, createArticle, updateArticle, loading: articlesLoading } = useArticle();
   const [showNewArticleDialog, setShowNewArticleDialog] = useState(false);
   const [newArticleTitle, setNewArticleTitle] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [markdownContent, setMarkdownContent] = useState('');
+  
+  const [openArticles, setOpenArticles] = useState<Article[]>([]);
+  const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
+  
+  const currentArticle = openArticles.find(a => a.id === activeArticleId) || null;
   const liveWordCount = markdownContent.trim().length
     ? markdownContent.trim().split(/\s+/).filter(Boolean).length
     : 0;
@@ -41,7 +46,7 @@ const Home = () => {
 
   useEffect(() => {
     setConversationId(null);
-  }, [currentArticle]);
+  }, [activeArticleId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,15 +61,40 @@ const Home = () => {
     };
   }, []);
 
+  const handleSelectArticle = (article: Article) => {
+    if (!openArticles.some(a => a.id === article.id)) {
+      setOpenArticles(prev => [...prev, article]);
+    }
+    setActiveArticleId(article.id);
+  };
+
+  const handleCloseTab = (e: React.MouseEvent, articleIdToClose: string) => {
+    e.stopPropagation();
+    const newOpenArticles = openArticles.filter(a => a.id !== articleIdToClose);
+    setOpenArticles(newOpenArticles);
+
+    if (activeArticleId === articleIdToClose) {
+      if (newOpenArticles.length > 0) {
+        setActiveArticleId(newOpenArticles[newOpenArticles.length - 1].id);
+      } else {
+        setActiveArticleId(null);
+      }
+    }
+  };
+
   const handleCreateArticle = async () => {
     if (!newArticleTitle.trim()) return;
     
     const article = await createArticle(newArticleTitle.trim());
     if (article) {
-      setCurrentArticle(article);
+      handleSelectArticle(article);
       setNewArticleTitle("");
       setShowNewArticleDialog(false);
     }
+  };
+
+  const onArticleUpdate = (updatedArticle: Article) => {
+    setOpenArticles(prev => prev.map(a => a.id === updatedArticle.id ? updatedArticle : a));
   };
 
   const applyAiChanges = async (content: string) => {
@@ -73,7 +103,7 @@ const Home = () => {
         const contentJSON = await editorRef.current.convertMarkdownToBlocksJSON(content);
         const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
         if (updatedArticle) {
-          setCurrentArticle(updatedArticle);
+          onArticleUpdate(updatedArticle);
           toast.success('Article has been updated by the AI.');
         }
       } catch (error) {
@@ -81,7 +111,7 @@ const Home = () => {
         toast.error("AI returned invalid content format. Saving as plain text.");
         const updatedArticle = await updateArticle(currentArticle.id, { content });
         if (updatedArticle) {
-          setCurrentArticle(updatedArticle);
+          onArticleUpdate(updatedArticle);
         }
       }
     }
@@ -111,7 +141,7 @@ const Home = () => {
         }
       });
       if (updatedArticle) {
-        setCurrentArticle(updatedArticle);
+        onArticleUpdate(updatedArticle);
         toast.success('Research data has been updated for the current article.');
       }
     }
@@ -190,9 +220,9 @@ const Home = () => {
                     key={article.id}
                     className={cn(
                       "p-3 cursor-pointer transition-colors hover:bg-accent/80",
-                      currentArticle?.id === article.id ? 'bg-accent' : ''
+                      activeArticleId === article.id ? 'bg-accent' : ''
                     )}
-                    onClick={() => setCurrentArticle(article)}
+                    onClick={() => handleSelectArticle(article)}
                   >
                     <div className="flex items-start space-x-3">
                       <FileText className="w-4 h-4 mt-1 text-white" />
@@ -225,11 +255,35 @@ const Home = () => {
           >
             {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
           </Button>
+          
+          <div className="flex-shrink-0 border-b border-border bg-background">
+            <div className="flex items-center space-x-1 p-1">
+              {openArticles.map(article => (
+                <button
+                  key={article.id}
+                  onClick={() => setActiveArticleId(article.id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
+                    activeArticleId === article.id
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/50"
+                  )}
+                >
+                  <span>{article.title}</span>
+                  <X 
+                    className="w-3 h-3 rounded-full hover:bg-destructive/20"
+                    onClick={(e) => handleCloseTab(e, article.id)}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Editor 
             ref={editorRef}
             key={currentArticle?.id || 'no-article'}
             currentArticle={currentArticle}
-            onArticleChange={setCurrentArticle}
+            onArticleUpdate={onArticleUpdate}
             onMarkdownChange={setMarkdownContent}
           />
         </main>

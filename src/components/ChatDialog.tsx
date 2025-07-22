@@ -48,29 +48,46 @@ export const ChatDialog = ({
   setConversationId
 }: ChatDialogProps) => {
   const { user } = useAuth();
-  const { chatWithAI, researchTopic, generateArticle, loading } = useAI();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: "Hello! I'm your AI writing assistant. Press Ctrl+L to talk to me. How can I help?",
-      timestamp: new Date()
-    }
-  ]);
+  const { chatWithAI, researchTopic, generateArticle, loading, getConversation } = useAI();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Reset chat when article changes
+  // Load conversation history
   useEffect(() => {
-    setMessages([
-      {
-        id: '1',
-        role: 'assistant',
-        content: "Hello! I'm your AI writing assistant. How can I help with this article?",
-        timestamp: new Date()
+    const loadHistory = async () => {
+      if (conversationId) {
+        const history = await getConversation(conversationId) as any[];
+        if (history.length > 0) {
+          const formattedHistory: Message[] = history.map((msg: any, index: number) => ({
+            id: `${conversationId}-${index}`,
+            role: msg.role,
+            content: msg.content,
+            timestamp: new Date() // Timestamps are not stored, so we use current time
+          }));
+          setMessages(formattedHistory);
+        } else {
+          setMessages([{
+            id: '1',
+            role: 'assistant',
+            content: "Hello! I'm your AI writing assistant. How can I help with this article?",
+            timestamp: new Date()
+          }]);
+        }
+      } else {
+        setMessages([{
+          id: '1',
+          role: 'assistant',
+          content: "Hello! I'm your AI writing assistant. How can I help with this article?",
+          timestamp: new Date()
+        }]);
       }
-    ]);
-  }, [currentArticle]);
+    };
+
+    if (isOpen) {
+      loadHistory();
+    }
+  }, [conversationId, isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

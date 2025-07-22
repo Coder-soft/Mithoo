@@ -17,7 +17,6 @@ export interface Article {
 export const useArticle = () => {
   const { user } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
-  const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -64,7 +63,6 @@ export const useArticle = () => {
 
       if (error) throw error;
       
-      setCurrentArticle(data);
       setArticles(prev => [data, ...prev]);
       toast.success('Article created successfully');
       return data;
@@ -92,10 +90,6 @@ export const useArticle = () => {
         article.id === id ? { ...article, ...data } : article
       ));
       
-      if (currentArticle?.id === id) {
-        setCurrentArticle(prev => prev ? { ...prev, ...data } : null);
-      }
-      
       return data;
     } catch (error) {
       console.error('Error updating article:', error);
@@ -116,9 +110,6 @@ export const useArticle = () => {
       if (error) throw error;
 
       setArticles(prev => prev.filter(article => article.id !== id));
-      if (currentArticle?.id === id) {
-        setCurrentArticle(null);
-      }
       
       toast.success('Article deleted successfully');
     } catch (error) {
@@ -129,8 +120,6 @@ export const useArticle = () => {
 
   return {
     articles,
-    currentArticle,
-    setCurrentArticle,
     loading,
     createArticle,
     updateArticle,

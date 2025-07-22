@@ -7,6 +7,22 @@ export const useAI = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  const getConversation = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('messages')
+        .eq('id', conversationId)
+        .single();
+      
+      if (error) throw error;
+      return data?.messages || [];
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      return [];
+    }
+  };
+
   const chatWithAI = async (message: string, conversationId?: string, articleId?: string, articleMarkdown?: string) => {
     setLoading(true);
     try {
@@ -103,6 +119,7 @@ export const useAI = () => {
 
   return {
     loading,
+    getConversation,
     chatWithAI,
     researchTopic,
     generateArticle,
