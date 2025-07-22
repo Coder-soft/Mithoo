@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Bot, User, Send, Lightbulb, Search, Edit3, Loader2 } from "lucide-react";
+import { Bot, User, Send, Loader2 } from "lucide-react";
 import { useAI } from "@/hooks/useAI";
 import { useAuth } from "@/hooks/useAuth";
 import { Article } from "@/hooks/useArticle";
@@ -108,7 +108,9 @@ export const ChatDialog = ({
       <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 border-b">
           <DialogTitle>AI Assistant</DialogTitle>
-          <DialogDescription>Chat with your AI assistant. Press Ctrl+L to open/close.</DialogDescription>
+          <DialogDescription>
+            Chat with your AI assistant. For research and generation, please use the 'Research' tab in the editor.
+          </DialogDescription>
         </DialogHeader>
         <div className="h-full bg-transparent flex flex-col overflow-hidden">
           <ScrollArea className="flex-1 p-4">
