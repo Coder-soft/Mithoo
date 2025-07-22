@@ -7,7 +7,7 @@ import { Bot, User, Send, Lightbulb, Search, Edit3, Loader2 } from "lucide-react
 import { useAI } from "@/hooks/useAI";
 import { useAuth } from "@/hooks/useAuth";
 import { Article } from "@/hooks/useArticle";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Message {
   id: string;
@@ -225,6 +225,9 @@ export const ChatDialog = ({
       <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 border-b">
           <DialogTitle>AI Assistant</DialogTitle>
+          <DialogDescription>
+            Chat with the AI to get help with your article. You can ask for ideas, research, or revisions.
+          </DialogDescription>
         </DialogHeader>
         <div className="h-full bg-transparent flex flex-col overflow-hidden">
           {/* Quick Actions */}

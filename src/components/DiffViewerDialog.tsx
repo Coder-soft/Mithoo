@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 interface DiffViewerDialogProps {
@@ -17,6 +17,9 @@ export const DiffViewerDialog = ({ isOpen, onClose, oldContent, newContent, onAc
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>AI Suggested Changes</DialogTitle>
+          <DialogDescription>
+            Review the changes suggested by the AI. Accept them to update your article, or reject to keep the original.
+          </DialogDescription>
         </DialogHeader>
         <div className="flex-grow overflow-y-auto">
           <ReactDiffViewer

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useAI } from "@/hooks/useAI";
@@ -68,6 +68,9 @@ export const FineTuningPanel = () => {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Fine-tune AI Model</DialogTitle>
+          <DialogDescription>
+            Customize the AI to match your unique writing style by providing examples of your work.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
