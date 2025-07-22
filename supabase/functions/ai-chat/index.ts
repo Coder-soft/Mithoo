@@ -123,34 +123,13 @@ ${fineTuningData.training_data}
       })
     });
 
-    if (!geminiResponse.ok || !geminiResponse.body) {
+    if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('Gemini API error:', errorText);
       throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorText}`);
     }
 
-    const reader = geminiResponse.body.getReader();
-    const decoder = new TextDecoder();
-    const encoder = new TextEncoder();
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-          for (const line of lines) {
-            controller.enqueue(encoder.encode(`data: ${line}\n\n`));
-          }
-        }
-        controller.close();
-      },
-    });
-
-    return new Response(stream, {
+    return new Response(geminiResponse.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream; charset=utf-8" },
     });
   } catch (error) {
