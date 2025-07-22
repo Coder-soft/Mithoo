@@ -11,6 +11,8 @@ import { Plus, FileText, ChevronLeft, ChevronRight, Book, Bot } from "lucide-rea
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ChatSidebar } from "@/components/ChatSidebar";
+import { markdownToBlocks } from "@blocknote/core";
+import { schema } from "@/lib/editor-schema";
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
@@ -58,10 +60,21 @@ const Home = () => {
 
   const handleContentGenerated = async (content: string) => {
     if (content && currentArticle && updateArticle) {
-      const updatedArticle = await updateArticle(currentArticle.id, { content });
-      if (updatedArticle) {
-        setCurrentArticle(updatedArticle);
-        toast.success('Article content has been generated and updated.');
+      try {
+        const blocks = await markdownToBlocks(content, schema);
+        const contentJSON = JSON.stringify(blocks);
+        const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
+        if (updatedArticle) {
+          setCurrentArticle(updatedArticle);
+          toast.success('Article content has been generated and updated.');
+        }
+      } catch (error) {
+        console.error("Failed to parse markdown from AI:", error);
+        toast.error("AI returned invalid content format. Saving as plain text.");
+        const updatedArticle = await updateArticle(currentArticle.id, { content });
+        if (updatedArticle) {
+          setCurrentArticle(updatedArticle);
+        }
       }
     }
   };

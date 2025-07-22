@@ -1,23 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
-import { Block, BlockNoteEditor, BlockNoteSchema } from "@blocknote/core";
+import { Block, BlockNoteEditor } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, FileText, Pilcrow, Upload } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
 import { FileUpload } from "./FileUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { schema } from "@/lib/editor-schema";
 
 interface EditorProps {
   currentArticle?: Article | null;
   onArticleChange?: (article: Article) => void;
 }
-
-const schema = BlockNoteSchema.create({});
 
 export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
   const { updateArticle } = useArticle();
