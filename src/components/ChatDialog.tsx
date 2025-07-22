@@ -21,8 +21,6 @@ interface ChatDialogProps {
   isOpen: boolean;
   onClose: () => void;
   currentArticle?: Article | null;
-  onResearch?: (data: any) => void;
-  onGenerate?: (content: string) => void;
   onEdit?: (markdown: string) => void;
   articleMarkdown?: string;
   conversationId: string | null;
@@ -41,181 +39,67 @@ export const ChatDialog = ({
   isOpen, 
   onClose, 
   currentArticle, 
-  onResearch, 
-  onGenerate, 
   onEdit, 
   articleMarkdown,
   conversationId,
   setConversationId
 }: ChatDialogProps) => {
   const { user } = useAuth();
-  const { chatWithAI, researchTopic, generateArticle, loading, getConversation } = useAI();
+  const { chatWithAI, loading, getConversation } = useAI();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load conversation history
   useEffect(() => {
     const loadHistory = async () => {
       if (conversationId) {
         const history = await getConversation(conversationId) as any[];
-        if (history.length > 0) {
-          const formattedHistory: Message[] = history.map((msg: any, index: number) => ({
-            id: `${conversationId}-${index}`,
-            role: msg.role,
-            content: msg.content,
-            timestamp: new Date() // Timestamps are not stored, so we use current time
-          }));
-          setMessages(formattedHistory);
-        } else {
-          setMessages([{
-            id: '1',
-            role: 'assistant',
-            content: "Hello! I'm your AI writing assistant. How can I help with this article?",
-            timestamp: new Date()
-          }]);
-        }
-      } else {
-        setMessages([{
-          id: '1',
-          role: 'assistant',
-          content: "Hello! I'm your AI writing assistant. How can I help with this article?",
+        const formattedHistory: Message[] = history.map((msg: any, index: number) => ({
+          id: `${conversationId}-${index}`,
+          role: msg.role,
+          content: msg.content,
           timestamp: new Date()
-        }]);
+        }));
+        setMessages(formattedHistory.length > 0 ? formattedHistory : [{ id: '1', role: 'assistant', content: "Hello! How can I help with this article?", timestamp: new Date() }]);
+      } else {
+        setMessages([{ id: '1', role: 'assistant', content: "Hello! How can I help with this article?", timestamp: new Date() }]);
       }
     };
-
-    if (isOpen) {
-      loadHistory();
-    }
+    if (isOpen) loadHistory();
   }, [conversationId, isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-
   const handleSendMessage = async () => {
     if (!inputValue.trim() || loading || !user) return;
     
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputValue,
-      timestamp: new Date()
-    };
-    
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: inputValue, timestamp: new Date() };
     const messageContent = inputValue;
     setInputValue("");
     
-    const tempAiMessageId = `temp-ai-${Date.now()}`;
-    const tempAiMessage: Message = {
-      id: tempAiMessageId,
-      role: 'assistant',
-      content: <AiLoadingIndicator />,
-      timestamp: new Date()
-    };
-
+    const tempAiMessage: Message = { id: `temp-ai-${Date.now()}`, role: 'assistant', content: <AiLoadingIndicator />, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage, tempAiMessage]);
     
     try {
-      const response = await chatWithAI(
-        messageContent, 
-        conversationId || undefined, 
-        currentArticle?.id,
-        articleMarkdown
-      );
-      
+      const response = await chatWithAI(messageContent, conversationId || undefined, currentArticle?.id, articleMarkdown);
       if (response) {
+        let aiMessage: Message;
         if (response.type === 'edit' && onEdit) {
           onEdit(response.newContent);
-          const aiExplanationMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: response.explanation,
-            timestamp: new Date()
-          };
-          setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? aiExplanationMessage : msg));
+          aiMessage = { id: (Date.now() + 1).toString(), role: 'assistant', content: response.explanation, timestamp: new Date() };
         } else {
-          const aiResponseMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: response.content,
-            timestamp: new Date()
-          };
-          setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? aiResponseMessage : msg));
+          aiMessage = { id: (Date.now() + 1).toString(), role: 'assistant', content: response.content, timestamp: new Date() };
         }
+        setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? aiMessage : msg));
         setConversationId(response.conversationId);
       } else {
         throw new Error("No response from AI");
       }
     } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "Sorry, I couldn't get a response. Please try again.",
-        timestamp: new Date()
-      };
+      const errorMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: "Sorry, I couldn't get a response. Please try again.", timestamp: new Date() };
       setMessages(prev => prev.map(msg => msg.id === tempAiMessage.id ? errorMessage : msg));
-    }
-  };
-
-  const handleQuickAction = async (action: 'ideas' | 'research' | 'revise') => {
-    if (!user || loading) return;
-
-    let prompt = '';
-    switch (action) {
-      case 'ideas':
-        prompt = 'Can you help me brainstorm some article ideas and topics that would be engaging and relevant?';
-        break;
-      case 'research':
-        if (currentArticle?.title) {
-          try {
-            const researchData = await researchTopic(
-              currentArticle.title, 
-              [currentArticle.title.split(' ')[0]], 
-              currentArticle.id
-            );
-            if (onResearch) onResearch(researchData);
-            return;
-          } catch (error) {
-            return;
-          }
-        } else {
-          prompt = 'I need help researching a topic. What information would you like me to gather?';
-        }
-        break;
-      case 'revise':
-        if (articleMarkdown) {
-          prompt = `Please review and suggest improvements for this article content: "${articleMarkdown.substring(0, 500)}..."`;
-        } else {
-          prompt = 'I need help revising my article. What would you like me to help you improve?';
-        }
-        break;
-    }
-
-    if (prompt) {
-      setInputValue(prompt);
-      setTimeout(() => handleSendMessage(), 100);
-    }
-  };
-
-  const handleGenerateFromChat = async () => {
-    if (!currentArticle?.title || loading) return;
-    
-    try {
-      const response = await generateArticle(
-        currentArticle.title,
-        currentArticle.content || undefined,
-        currentArticle.research_data?.data,
-        currentArticle.id
-      );
-      
-      if (response && onGenerate) {
-        onGenerate(response.content);
-      }
-    } catch (error) {
-      // Error handling is done in the hook
     }
   };
 
@@ -224,33 +108,9 @@ export const ChatDialog = ({
       <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 border-b">
           <DialogTitle>AI Assistant</DialogTitle>
-          <DialogDescription>
-            Chat with your AI assistant to get help with your article. Press Ctrl+L to open/close.
-          </DialogDescription>
+          <DialogDescription>Chat with your AI assistant. Press Ctrl+L to open/close.</DialogDescription>
         </DialogHeader>
         <div className="h-full bg-transparent flex flex-col overflow-hidden">
-          {/* Quick Actions */}
-          <div className="p-4 border-b border-border">
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => handleQuickAction('ideas')} disabled={loading}>
-                <Lightbulb className="w-3 h-3 mr-1" /> Ideas
-              </Button>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => handleQuickAction('research')} disabled={loading || !currentArticle}>
-                <Search className="w-3 h-3 mr-1" /> Research
-              </Button>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => handleQuickAction('revise')} disabled={loading || !articleMarkdown}>
-                <Edit3 className="w-3 h-3 mr-1" /> Revise
-              </Button>
-            </div>
-            {currentArticle?.title && (
-              <Button variant="default" size="sm" className="w-full text-xs" onClick={handleGenerateFromChat} disabled={loading}>
-                {loading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Bot className="w-3 h-3 mr-1" />}
-                Generate Article
-              </Button>
-            )}
-          </div>
-
-          {/* Messages */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4 pr-4">
               {messages.map((message) => (
@@ -258,22 +118,15 @@ export const ChatDialog = ({
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                     {message.role === 'assistant' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </div>
-                  <Card className={cn(
-                    "p-3 max-w-[calc(100%-3rem)]",
-                    message.role === 'assistant' ? 'bg-ai-message border-border' : 'bg-secondary user-prompt'
-                  )}>
+                  <Card className={cn("p-3 max-w-[calc(100%-3rem)]", message.role === 'assistant' ? 'bg-ai-message border-border' : 'bg-secondary user-prompt')}>
                     <div className="text-sm leading-relaxed break-words">{message.content}</div>
-                    <span className="text-xs opacity-70 mt-2 block">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <span className="text-xs opacity-70 mt-2 block">{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </Card>
                 </div>
               ))}
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
-
-          {/* Input */}
           <div className="p-4 border-t border-border">
             <div className="flex space-x-2">
               <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Ask me anything..." className="flex-1 bg-background" onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} />

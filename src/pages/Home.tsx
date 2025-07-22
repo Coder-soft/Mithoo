@@ -97,54 +97,22 @@ const Home = () => {
     setOpenArticles(prev => prev.map(a => a.id === updatedArticle.id ? updatedArticle : a));
   };
 
-  const applyAiChanges = async (content: string) => {
-    if (content && currentArticle && updateArticle && editorRef.current) {
-      try {
-        const contentJSON = await editorRef.current.convertMarkdownToBlocksJSON(content);
-        const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
-        if (updatedArticle) {
-          onArticleUpdate(updatedArticle);
-          toast.success('Article has been updated by the AI.');
-        }
-      } catch (error) {
-        console.error("Failed to parse markdown from AI:", error);
-        toast.error("AI returned invalid content format. Saving as plain text.");
-        const updatedArticle = await updateArticle(currentArticle.id, { content });
-        if (updatedArticle) {
-          onArticleUpdate(updatedArticle);
-        }
-      }
-    }
-  };
-
   const handleAiEdit = (newContent: string) => {
     setDiffData({ old: markdownContent, new: newContent });
     setIsDiffDialogOpen(true);
   };
 
-  const handleAcceptChanges = () => {
-    if (diffData) {
-      applyAiChanges(diffData.new);
+  const handleAcceptChanges = async () => {
+    if (diffData && currentArticle && editorRef.current) {
+      const contentJSON = await editorRef.current.convertMarkdownToBlocksJSON(diffData.new);
+      const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
+      if (updatedArticle) {
+        onArticleUpdate(updatedArticle);
+        toast.success('Article has been updated by the AI.');
+      }
     }
     setIsDiffDialogOpen(false);
     setDiffData(null);
-  };
-
-  const handleResearchUpdate = async (researchData: any) => {
-    if (researchData && currentArticle && updateArticle) {
-      const updatedArticle = await updateArticle(currentArticle.id, {
-        research_data: {
-          topic: researchData.topic,
-          keywords: researchData.keywords,
-          data: researchData.research,
-          generated_at: new Date().toISOString()
-        }
-      });
-      if (updatedArticle) {
-        onArticleUpdate(updatedArticle);
-        toast.success('Research data has been updated for the current article.');
-      }
-    }
   };
 
   if (authLoading || !user) {
@@ -162,75 +130,34 @@ const Home = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header onCreateArticle={() => setShowNewArticleDialog(true)} />
       <div className="flex-grow flex overflow-hidden">
-        {/* Icon Navigation Rail */}
         <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-muted/30 border-r border-border">
-          <Button 
-            variant={'secondary'} 
-            size="icon" 
-            aria-label="Articles"
-          >
-            <Book className="w-5 h-5" />
-          </Button>
+          <Button variant={'secondary'} size="icon" aria-label="Articles"><Book className="w-5 h-5" /></Button>
         </nav>
 
-        {/* Collapsible Content Panel */}
-        <aside className={cn(
-          "bg-muted/50 border-r border-border transition-all duration-300 ease-in-out flex-shrink-0",
-          isPanelOpen ? 'w-96' : 'w-0'
-        )}>
+        <aside className={cn("bg-muted/50 border-r border-border transition-all duration-300 ease-in-out flex-shrink-0", isPanelOpen ? 'w-96' : 'w-0')}>
           <div className={cn("h-full flex flex-col", isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
             <div className="p-4 border-b border-border flex items-center justify-between">
               <h2 className="text-lg font-semibold capitalize">Articles</h2>
               <Dialog open={showNewArticleDialog} onOpenChange={setShowNewArticleDialog}>
-                <DialogTrigger asChild>
-                  <Button size="icon" variant="ghost">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </DialogTrigger>
+                <DialogTrigger asChild><Button size="icon" variant="ghost"><Plus className="w-4 h-4" /></Button></DialogTrigger>
                 <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Article</DialogTitle>
-                    <DialogDescription>
-                      Give your new article a title to get started. You can change it later.
-                    </DialogDescription>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle>Create New Article</DialogTitle><DialogDescription>Give your new article a title to get started.</DialogDescription></DialogHeader>
                   <div className="space-y-4 py-4">
-                    <Input
-                      placeholder="Enter article title..."
-                      value={newArticleTitle}
-                      onChange={(e) => setNewArticleTitle(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleCreateArticle()}
-                    />
-                    <Button 
-                      onClick={handleCreateArticle}
-                      disabled={!newArticleTitle.trim() || articlesLoading}
-                      className="w-full"
-                    >
-                      Create Article
-                    </Button>
+                    <Input placeholder="Enter article title..." value={newArticleTitle} onChange={(e) => setNewArticleTitle(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleCreateArticle()} />
+                    <Button onClick={handleCreateArticle} disabled={!newArticleTitle.trim() || articlesLoading} className="w-full">Create Article</Button>
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
-            
             <div className="flex-grow overflow-y-auto">
               <div className="p-4 space-y-2">
                 {articles.map((article) => (
-                  <Card
-                    key={article.id}
-                    className={cn(
-                      "p-3 cursor-pointer transition-colors hover:bg-accent/80",
-                      activeArticleId === article.id ? 'bg-accent' : ''
-                    )}
-                    onClick={() => handleSelectArticle(article)}
-                  >
+                  <Card key={article.id} className={cn("p-3 cursor-pointer transition-colors hover:bg-accent/80", activeArticleId === article.id ? 'bg-accent' : '')} onClick={() => handleSelectArticle(article)}>
                     <div className="flex items-start space-x-3">
                       <FileText className="w-4 h-4 mt-1 text-white" />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium truncate text-sm">{article.title}</h4>
-                        <p className="text-xs text-white">
-                          {article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words
-                        </p>
+                        <p className="text-xs text-white">{article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words</p>
                       </div>
                     </div>
                   </Card>
@@ -247,67 +174,24 @@ const Home = () => {
         </aside>
 
         <main className="flex-grow flex flex-col relative">
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute top-4 left-4 z-10 h-8 w-8"
-            onClick={() => setIsPanelOpen(!isPanelOpen)}
-          >
+          <Button variant="outline" size="icon" className="absolute top-4 left-4 z-10 h-8 w-8" onClick={() => setIsPanelOpen(!isPanelOpen)}>
             {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
           </Button>
-          
           <div className="flex-shrink-0 border-b border-border bg-background">
             <div className="flex items-center space-x-1 p-1">
               {openArticles.map(article => (
-                <button
-                  key={article.id}
-                  onClick={() => setActiveArticleId(article.id)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
-                    activeArticleId === article.id
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/50"
-                  )}
-                >
+                <button key={article.id} onClick={() => setActiveArticleId(article.id)} className={cn("flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors", activeArticleId === article.id ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50")}>
                   <span>{article.title}</span>
-                  <X 
-                    className="w-3 h-3 rounded-full hover:bg-destructive/20"
-                    onClick={(e) => handleCloseTab(e, article.id)}
-                  />
+                  <X className="w-3 h-3 rounded-full hover:bg-destructive/20" onClick={(e) => handleCloseTab(e, article.id)} />
                 </button>
               ))}
             </div>
           </div>
-
-          <Editor 
-            ref={editorRef}
-            key={currentArticle?.id || 'no-article'}
-            currentArticle={currentArticle}
-            onArticleChange={onArticleUpdate}
-            onMarkdownChange={setMarkdownContent}
-          />
+          <Editor ref={editorRef} key={currentArticle?.id || 'no-article'} currentArticle={currentArticle} onArticleUpdate={onArticleUpdate} onMarkdownChange={setMarkdownContent} />
         </main>
       </div>
-      {diffData && (
-        <DiffViewerDialog
-          isOpen={isDiffDialogOpen}
-          onClose={() => setIsDiffDialogOpen(false)}
-          oldContent={diffData.old}
-          newContent={diffData.new}
-          onAccept={handleAcceptChanges}
-        />
-      )}
-      <ChatDialog
-        isOpen={isChatDialogOpen}
-        onClose={() => setIsChatDialogOpen(false)}
-        currentArticle={currentArticle}
-        onResearch={handleResearchUpdate}
-        onGenerate={applyAiChanges}
-        onEdit={handleAiEdit}
-        articleMarkdown={markdownContent}
-        conversationId={conversationId}
-        setConversationId={setConversationId}
-      />
+      {diffData && <DiffViewerDialog isOpen={isDiffDialogOpen} onClose={() => setIsDiffDialogOpen(false)} oldContent={diffData.old} newContent={diffData.new} onAccept={handleAcceptChanges} />}
+      <ChatDialog isOpen={isChatDialogOpen} onClose={() => setIsChatDialogOpen(false)} currentArticle={currentArticle} onEdit={handleAiEdit} articleMarkdown={markdownContent} conversationId={conversationId} setConversationId={setConversationId} />
     </div>
   );
 };
