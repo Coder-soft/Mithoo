@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useAI } from "@/hooks/useAI";
@@ -68,18 +68,14 @@ export const FineTuningPanel = () => {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Fine-tune AI Model</DialogTitle>
+          <DialogDescription>
+            Fine-tuning customizes the powerful Gemini 1.5 Pro model to match your unique writing style. 
+            Provide examples of your best writing, and the AI will learn to emulate your tone, 
+            structure, and approach for more personalized content generation.
+          </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-medium mb-2">About Fine-tuning</h3>
-            <p className="text-sm text-muted-foreground">
-              Fine-tuning customizes the powerful Gemini 1.5 Pro model to match your unique writing style. 
-              Provide examples of your best writing, and the AI will learn to emulate your tone, 
-              structure, and approach for more personalized content generation.
-            </p>
-          </div>
-
+        <div className="space-y-6 pt-4">
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Model Name</label>

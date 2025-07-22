@@ -6,7 +6,7 @@ import { useArticle, Article } from "@/hooks/useArticle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Plus, FileText, Book, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -160,6 +160,9 @@ const Home = () => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create New Article</DialogTitle>
+                    <DialogDescription>
+                      Give your new article a title to get started. You can change it later.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <Input
