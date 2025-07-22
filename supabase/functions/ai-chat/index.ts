@@ -22,6 +22,11 @@ serve(async (req) => {
 
   try {
     const { message, conversationId, articleId, userId, articleMarkdown } = await req.json()
+    
+    if (!message || message.trim() === '') {
+      return new Response(JSON.stringify({ error: 'Message cannot be empty' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -63,6 +68,21 @@ serve(async (req) => {
       throw new Error("Conversation could not be found or created.");
     }
 
+    // --- Add Fine-Tuning Context ---
+    let fineTuningPrompt = ''
+    const { data: fineTuningData } = await supabaseClient
+      .from('fine_tuning_data')
+      .select('training_data')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (fineTuningData && fineTuningData.training_data) {
+      fineTuningPrompt = `\n\n---\nHere is some training data that reflects the user's preferred writing style. Adapt your writing to match this style, tone, and structure.\n\nTraining Data:\n${fineTuningData.training_data}\n---`
+    }
+
     let articleContextPrompt = ""
     if (articleMarkdown) {
       let articleTitle = 'Untitled';
@@ -72,27 +92,34 @@ serve(async (req) => {
           articleTitle = articleData.title;
         }
       }
-      articleContextPrompt = `\n---Current Article Context ("${articleTitle}")---\n${articleMarkdown}\n---End Context---`
+      articleContextPrompt = `\n\n---Current Article Context ("${articleTitle}")---\n${articleMarkdown}\n---End Context---`
     }
 
-    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${articleContextPrompt}`
+    const finalSystemPrompt = `${MITHoo_SYSTEM_PROMPT}${fineTuningPrompt}${articleContextPrompt}`
 
-    const history = (Array.isArray(conversation.messages) ? conversation.messages : [])
+    // --- Robust History Sanitization ---
+    const rawHistory = (Array.isArray(conversation.messages) ? conversation.messages : [])
       .filter(m => m && typeof m.role === 'string' && typeof m.content === 'string' && m.content.trim() !== '');
 
-    const messagesWithNew = [...history, { role: 'user', content: message }];
-
-    const consolidatedMessages = messagesWithNew.reduce((acc, current) => {
-      const last = acc.length > 0 ? acc[acc.length - 1] : null;
-      if (last && last.role === 'user' && current.role === 'user') {
-        last.content = `${last.content}\n\n${current.content}`;
-      } else {
-        acc.push(current);
-      }
-      return acc;
-    }, [] as {role: string, content: string}[]);
+    const sanitizedHistory = [];
+    if (rawHistory.length > 0) {
+        if (rawHistory[0].role === 'user') {
+            sanitizedHistory.push(rawHistory[0]);
+            for (let i = 1; i < rawHistory.length; i++) {
+                if (rawHistory[i].role !== sanitizedHistory[sanitizedHistory.length - 1].role) {
+                    sanitizedHistory.push(rawHistory[i]);
+                }
+            }
+        }
+    }
     
-    const geminiContents = consolidatedMessages.map(msg => ({
+    if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') {
+        sanitizedHistory.pop();
+    }
+
+    const messagesForApi = [...sanitizedHistory, { role: 'user', content: message }];
+    
+    const geminiContents = messagesForApi.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
@@ -115,14 +142,7 @@ serve(async (req) => {
       throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
     }
 
-    let rawResponse;
-    if (!geminiData.candidates || geminiData.candidates.length === 0) {
-      const blockReason = geminiData.promptFeedback?.blockReason;
-      rawResponse = `I'm sorry, I can't respond to that. Reason: ${blockReason || 'Content policy'}. Please rephrase your message.`;
-      console.warn('Gemini chat blocked:', geminiData.promptFeedback);
-    } else {
-      rawResponse = geminiData.candidates[0]?.content?.parts[0]?.text || 'I apologize, but I encountered an error.';
-    }
+    const rawResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I encountered an error.';
 
     let responsePayload: object;
     let aiMessageContent: string;
@@ -131,30 +151,17 @@ serve(async (req) => {
       const parsedResponse = JSON.parse(rawResponse);
       if (parsedResponse.explanation && parsedResponse.newContent) {
         aiMessageContent = parsedResponse.explanation;
-        responsePayload = {
-          type: 'edit',
-          explanation: parsedResponse.explanation,
-          newContent: parsedResponse.newContent,
-          conversationId: conversation.id,
-        };
+        responsePayload = { type: 'edit', explanation: parsedResponse.explanation, newContent: parsedResponse.newContent, conversationId: conversation.id };
       } else {
         aiMessageContent = rawResponse;
-        responsePayload = {
-          type: 'chat',
-          content: rawResponse,
-          conversationId: conversation.id,
-        };
+        responsePayload = { type: 'chat', content: rawResponse, conversationId: conversation.id };
       }
     } catch (e) {
       aiMessageContent = rawResponse;
-      responsePayload = {
-        type: 'chat',
-        content: rawResponse,
-        conversationId: conversation.id,
-      };
+      responsePayload = { type: 'chat', content: rawResponse, conversationId: conversation.id };
     }
 
-    const updatedMessages = [...consolidatedMessages, { role: 'assistant', content: aiMessageContent }];
+    const updatedMessages = [...messagesForApi, { role: 'assistant', content: aiMessageContent }];
     await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id);
 
     return new Response(
