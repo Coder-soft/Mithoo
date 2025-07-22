@@ -53,7 +53,7 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: researchPrompt }] }],
+        contents: [{ role: 'user', parts: [{ text: researchPrompt }] }],
         tools: [{ googleSearchRetrieval: {} }],
         systemInstruction: { parts: [{ text: MITHoo_SYSTEM_PROMPT }] }
       }),

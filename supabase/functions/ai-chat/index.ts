@@ -6,11 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a helpful AI writing assistant. Your purpose is to be a conversational partner.
+const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a helpful AI writing assistant. Your purpose is to be a conversational partner and research assistant.
 
 **YOUR CAPABILITIES:**
 - You can answer questions, brainstorm ideas, and help with simple text edits.
-- For complex tasks like **in-depth research** or **writing a full article**, you MUST guide the user to the "Research" tab in the editor, which has specialized tools for those jobs.
+- You have access to Google Search to find real-time information. Use it whenever a user's query requires up-to-date information or research.
 - When asked to make a change to the article, you MUST respond with a JSON object with this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}.
 - For all other conversation, respond with a normal string. Do not use the JSON format unless you are providing a direct edit.
 `
@@ -85,6 +85,7 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: geminiContents,
+        tools: [{ googleSearchRetrieval: {} }],
         systemInstruction: { parts: [{ text: finalSystemPrompt }] }
       }),
     })
