@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
-import { Block, BlockNoteEditor } from "@blocknote/core";
+import { Block, BlockNoteEditor, markdownToBlocks } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,20 +60,15 @@ export const Editor = ({ currentArticle, onArticleChange }: EditorProps) => {
       return;
     }
 
-    // Using setTimeout to defer the update to the next event loop tick.
-    // This helps prevent a race condition with React's Strict Mode in development
-    // that can cause errors when rapidly replacing content.
-    const timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(async () => {
       if (currentArticle) {
         try {
           const blocks = JSON.parse(currentArticle.content || '[]') as Block[];
           editor.replaceBlocks(editor.topLevelBlocks, blocks);
         } catch (e) {
-          // If content is not valid JSON, treat it as plain text
-          editor.replaceBlocks(editor.topLevelBlocks, [{
-            type: "paragraph",
-            content: currentArticle.content || ""
-          }]);
+          // If content is not valid JSON, treat it as markdown
+          const blocks = await markdownToBlocks(currentArticle.content || "", schema);
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
         }
       } else {
         editor.replaceBlocks(editor.topLevelBlocks, []);
