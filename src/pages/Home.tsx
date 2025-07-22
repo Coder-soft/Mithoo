@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, FileText, Book, Bot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Plus, FileText, Book, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { ChatSidebar } from "@/components/ChatSidebar";
+import { ChatDialog } from "@/components/ChatDialog";
 import { DiffViewerDialog } from "@/components/DiffViewerDialog";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +20,7 @@ const Home = () => {
   const [showNewArticleDialog, setShowNewArticleDialog] = useState(false);
   const [newArticleTitle, setNewArticleTitle] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const [activeView, setActiveView] = useState<'articles' | 'chat'>('articles');
   const [markdownContent, setMarkdownContent] = useState('');
-  // live word count based on current markdown content
   const liveWordCount = markdownContent.trim().length
     ? markdownContent.trim().split(/\s+/).filter(Boolean).length
     : 0;
@@ -32,11 +30,31 @@ const Home = () => {
   const [isDiffDialogOpen, setIsDiffDialogOpen] = useState(false);
   const [diffData, setDiffData] = useState<{ old: string; new: string } | null>(null);
 
+  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user && !authLoading) {
       navigate("/login");
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    setConversationId(null);
+  }, [currentArticle]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        setIsChatDialogOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleCreateArticle = async () => {
     if (!newArticleTitle.trim()) return;
@@ -46,7 +64,6 @@ const Home = () => {
       setCurrentArticle(article);
       setNewArticleTitle("");
       setShowNewArticleDialog(false);
-      setActiveView('articles');
     }
   };
 
@@ -118,20 +135,11 @@ const Home = () => {
         {/* Icon Navigation Rail */}
         <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-muted/30 border-r border-border">
           <Button 
-            variant={activeView === 'articles' ? 'secondary' : 'ghost'} 
+            variant={'secondary'} 
             size="icon" 
-            onClick={() => setActiveView('articles')}
             aria-label="Articles"
           >
             <Book className="w-5 h-5" />
-          </Button>
-          <Button 
-            variant={activeView === 'chat' ? 'secondary' : 'ghost'} 
-            size="icon" 
-            onClick={() => setActiveView('chat')}
-            aria-label="AI Chat"
-          >
-            <Bot className="w-5 h-5" />
           </Button>
         </nav>
 
@@ -142,78 +150,65 @@ const Home = () => {
         )}>
           <div className={cn("h-full flex flex-col", isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
             <div className="p-4 border-b border-border flex items-center justify-between">
-              <h2 className="text-lg font-semibold capitalize">{activeView}</h2>
-              {activeView === 'articles' && (
-                <Dialog open={showNewArticleDialog} onOpenChange={setShowNewArticleDialog}>
-                  <DialogTrigger asChild>
-                    <Button size="icon" variant="ghost">
-                      <Plus className="w-4 h-4" />
+              <h2 className="text-lg font-semibold capitalize">Articles</h2>
+              <Dialog open={showNewArticleDialog} onOpenChange={setShowNewArticleDialog}>
+                <DialogTrigger asChild>
+                  <Button size="icon" variant="ghost">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Article</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <Input
+                      placeholder="Enter article title..."
+                      value={newArticleTitle}
+                      onChange={(e) => setNewArticleTitle(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateArticle()}
+                    />
+                    <Button 
+                      onClick={handleCreateArticle}
+                      disabled={!newArticleTitle.trim() || articlesLoading}
+                      className="w-full"
+                    >
+                      Create Article
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Article</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <Input
-                        placeholder="Enter article title..."
-                        value={newArticleTitle}
-                        onChange={(e) => setNewArticleTitle(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleCreateArticle()}
-                      />
-                      <Button 
-                        onClick={handleCreateArticle}
-                        disabled={!newArticleTitle.trim() || articlesLoading}
-                        className="w-full"
-                      >
-                        Create Article
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
             
             <div className="flex-grow overflow-y-auto">
-              {activeView === 'articles' && (
-                <div className="p-4 space-y-2">
-                  {articles.map((article) => (
-                    <Card
-                      key={article.id}
-                      className={cn(
-                        "p-3 cursor-pointer transition-colors hover:bg-accent/80",
-                        currentArticle?.id === article.id ? 'bg-accent' : ''
-                      )}
-                      onClick={() => setCurrentArticle(article)}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <FileText className="w-4 h-4 mt-1 text-white" />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate text-sm">{article.title}</h4>
-                          <p className="text-xs text-white">
-                            {article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words
-                          </p>
-                        </div>
+              <div className="p-4 space-y-2">
+                {articles.map((article) => (
+                  <Card
+                    key={article.id}
+                    className={cn(
+                      "p-3 cursor-pointer transition-colors hover:bg-accent/80",
+                      currentArticle?.id === article.id ? 'bg-accent' : ''
+                    )}
+                    onClick={() => setCurrentArticle(article)}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <FileText className="w-4 h-4 mt-1 text-white" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium truncate text-sm">{article.title}</h4>
+                        <p className="text-xs text-white">
+                          {article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words
+                        </p>
                       </div>
-                    </Card>
-                  ))}
-                  {articles.length === 0 && !articlesLoading && (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground text-sm">No articles yet.</p>
-                      <Button variant="link" size="sm" onClick={() => setShowNewArticleDialog(true)}>Create your first article</Button>
                     </div>
-                  )}
-                </div>
-              )}
-              {activeView === 'chat' && (
-                <ChatSidebar
-                  currentArticle={currentArticle}
-                  onResearch={handleResearchUpdate}
-                  onGenerate={applyAiChanges}
-                  onEdit={handleAiEdit}
-                  articleMarkdown={markdownContent}
-                />
-              )}
+                  </Card>
+                ))}
+                {articles.length === 0 && !articlesLoading && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground text-sm">No articles yet.</p>
+                    <Button variant="link" size="sm" onClick={() => setShowNewArticleDialog(true)}>Create your first article</Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </aside>
@@ -245,6 +240,17 @@ const Home = () => {
           onAccept={handleAcceptChanges}
         />
       )}
+      <ChatDialog
+        isOpen={isChatDialogOpen}
+        onClose={() => setIsChatDialogOpen(false)}
+        currentArticle={currentArticle}
+        onResearch={handleResearchUpdate}
+        onGenerate={applyAiChanges}
+        onEdit={handleAiEdit}
+        articleMarkdown={markdownContent}
+        conversationId={conversationId}
+        setConversationId={setConversationId}
+      />
     </div>
   );
 };
