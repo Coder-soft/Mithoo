@@ -80,19 +80,34 @@ serve(async (req) => {
     const history = (Array.isArray(conversation.messages) ? conversation.messages : [])
       .filter(m => m && typeof m.role === 'string' && typeof m.content === 'string' && m.content.trim() !== '');
 
-    const messagesWithNew = [...history, { role: 'user', content: message }];
+    const allMessages = [...history, { role: 'user', content: message }];
 
-    const consolidatedMessages = messagesWithNew.reduce((acc, current) => {
-      const last = acc.length > 0 ? acc[acc.length - 1] : null;
-      if (last && last.role === 'user' && current.role === 'user') {
-        last.content = `${last.content}\n\n${current.content}`;
-      } else {
-        acc.push(current);
-      }
-      return acc;
+    // Step 1: Consolidate consecutive messages of the same role.
+    const consolidatedMessages = allMessages.reduce((acc, current) => {
+        const last = acc.length > 0 ? acc[acc.length - 1] : null;
+        if (last && last.role === current.role) {
+            last.content = `${last.content}\n\n${current.content}`;
+        } else {
+            acc.push({ role: current.role, content: current.content });
+        }
+        return acc;
     }, [] as {role: string, content: string}[]);
-    
-    const geminiContents = consolidatedMessages.map(msg => ({
+
+    // Step 2: Ensure the sequence starts with a 'user' message.
+    const firstUserIndex = consolidatedMessages.findIndex(m => m.role === 'user');
+    if (firstUserIndex === -1) {
+        throw new Error("Cannot process a conversation without any user messages.");
+    }
+    let validSequence = consolidatedMessages.slice(firstUserIndex);
+
+    // Step 3: Ensure roles alternate correctly (user, model, user, model...).
+    const finalSequence = validSequence.filter((msg, index) => {
+        if (index === 0) return true; // First message is already known to be 'user'.
+        const prevRole = validSequence[index - 1].role;
+        return msg.role !== prevRole;
+    });
+
+    const geminiContents = finalSequence.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
@@ -154,7 +169,7 @@ serve(async (req) => {
       };
     }
 
-    const updatedMessages = [...consolidatedMessages, { role: 'assistant', content: aiMessageContent }];
+    const updatedMessages = [...finalSequence, { role: 'assistant', content: aiMessageContent }];
     await supabaseClient.from('conversations').update({ messages: updatedMessages }).eq('id', conversation.id);
 
     return new Response(
