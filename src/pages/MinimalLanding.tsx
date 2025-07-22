@@ -37,7 +37,7 @@ const MinimalLanding = () => {
           </Link>
           <div className="flex items-center space-x-2">
             <Button asChild>
-              <Link to="/login">Apply for Beta Testing</Link>
+              <a href="https://phattiforms.vercel.app/forms/view/4f1fae8b-d136-4a79-a99c-925bdd8929db" target="_blank" rel="noopener noreferrer">Apply for Beta Testing</a>
             </Button>
           </div>
         </div>
@@ -53,10 +53,10 @@ const MinimalLanding = () => {
           </p>
           <div className="mt-8">
             <Button asChild size="lg">
-              <Link to="/login">
+              <a href="https://phattiforms.vercel.app/forms/view/4f1fae8b-d136-4a79-a99c-925bdd8929db" target="_blank" rel="noopener noreferrer">
                 Apply for Beta Testing
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+              </a>
             </Button>
           </div>
         </div>
