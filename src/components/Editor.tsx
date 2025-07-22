@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
-import { Block, BlockNoteEditor } from "@blocknote/core";
+import { Block, BlockNoteEditor, BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, defaultStyleSpecs } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,19 @@ import { Article, useArticle } from "@/hooks/useArticle";
 import { FileUpload } from "./FileUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { schema } from "@/lib/editor-schema";
+
+// Define the schema for our editor
+const schema = BlockNoteSchema.create({
+  blockSpecs: {
+    ...defaultBlockSpecs,
+  },
+  inlineContentSpecs: {
+    ...defaultInlineContentSpecs,
+  },
+  styleSpecs: {
+    ...defaultStyleSpecs,
+  }
+});
 
 interface EditorProps {
   currentArticle?: Article | null;
