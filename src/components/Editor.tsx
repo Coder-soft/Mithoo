@@ -4,12 +4,9 @@ import { Block, BlockNoteEditor } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, FileText, Pilcrow, Upload, Search, Bot, Loader2, Link as LinkIcon } from "lucide-react";
+import { Save, FileText, Pilcrow, Upload } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
-import { useAI } from "@/hooks/useAI";
 import { FileUpload } from "./FileUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,12 +23,10 @@ export interface EditorRef {
 
 export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onArticleUpdate, onMarkdownChange }, ref) => {
   const { updateArticle } = useArticle();
-  const { researchTopic, generateArticle, loading: aiLoading } = useAI();
   const [title, setTitle] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [articleFiles, setArticleFiles] = useState<any[]>([]);
-  const [researchQuery, setResearchQuery] = useState("");
 
   const editor: BlockNoteEditor | null = useCreateBlockNote();
 
@@ -64,10 +59,8 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   useEffect(() => {
     if (currentArticle) {
       setTitle(currentArticle.title);
-      setResearchQuery(currentArticle.title);
     } else {
       setTitle("");
-      setResearchQuery("");
     }
     loadArticleFiles();
 
@@ -110,31 +103,6 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
     }
   };
 
-  const handleResearch = async () => {
-    if (!currentArticle || !researchQuery) return;
-    const researchResult = await researchTopic(researchQuery, [], currentArticle.id);
-    if (researchResult) {
-      const updated = await updateArticle(currentArticle.id, { research_data: researchResult });
-      if (updated) onArticleUpdate(updated);
-    }
-  };
-
-  const handleGenerate = async () => {
-    if (!currentArticle) return;
-    const researchData = currentArticle.research_data?.research;
-    if (!researchData) {
-      toast.error("Please conduct research before generating an article.");
-      return;
-    }
-    const generationResult = await generateArticle(currentArticle.title, undefined, researchData, currentArticle.id);
-    if (generationResult?.content) {
-      const blocks = await editor.tryParseMarkdownToBlocks(generationResult.content);
-      editor.replaceBlocks(editor.topLevelBlocks, blocks);
-      toast.success("Article generated based on your research!");
-      handleSave();
-    }
-  };
-
   if (!currentArticle) {
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/30">
@@ -158,7 +126,6 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
         <Tabs defaultValue="editor" className="h-full flex flex-col">
           <TabsList className="mx-6 mt-4">
             <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="research">Research</TabsTrigger>
             <TabsTrigger value="files">Files ({articleFiles.length})</TabsTrigger>
           </TabsList>
           
@@ -172,39 +139,6 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
                 if (onMarkdownChange) onMarkdownChange(text);
               }
             }} />
-          </TabsContent>
-
-          <TabsContent value="research" className="flex-1 mt-0 p-6 space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="research-query">Research Topic</Label>
-              <div className="flex gap-2">
-                <Input id="research-query" value={researchQuery} onChange={(e) => setResearchQuery(e.target.value)} placeholder="Enter a topic to research..." />
-                <Button onClick={handleResearch} disabled={aiLoading}>
-                  {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Research Summary</Label>
-              <Textarea value={currentArticle.research_data?.research || "No research conducted yet."} readOnly className="h-64 bg-muted/50" />
-            </div>
-            {currentArticle.research_data?.sources?.length > 0 && (
-              <div className="space-y-2">
-                <Label>Sources Found</Label>
-                <div className="p-4 border rounded-md bg-muted/50 space-y-2">
-                  {currentArticle.research_data.sources.map((source: any, index: number) => (
-                    <a key={index} href={source.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                      <LinkIcon className="w-4 h-4" />
-                      <span>{source.title}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-            <Button onClick={handleGenerate} disabled={aiLoading || !currentArticle.research_data?.research}>
-              {aiLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bot className="w-4 h-4 mr-2" />}
-              Generate Article from Research
-            </Button>
           </TabsContent>
           
           <TabsContent value="files" className="flex-1 mt-0 p-6">

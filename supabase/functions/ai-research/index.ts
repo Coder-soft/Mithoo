@@ -22,7 +22,7 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, keywords, articleId, userId } = await req.json()
+    const { topic, keywords, userId } = await req.json()
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -62,6 +62,7 @@ serve(async (req) => {
     const geminiData = await geminiResponse.json()
 
     if (!geminiResponse.ok) {
+      console.error("Gemini API Error:", geminiData);
       throw new Error(`Gemini API Error: ${geminiData?.error?.message || 'Unknown error'}`);
     }
 
@@ -81,14 +82,6 @@ serve(async (req) => {
       keywords: keywords,
       generated_at: new Date().toISOString()
     };
-
-    if (articleId) {
-      await supabaseClient
-        .from('articles')
-        .update({ research_data: researchPayload })
-        .eq('id', articleId)
-        .eq('user_id', user.id)
-    }
 
     return new Response(
       JSON.stringify(researchPayload),

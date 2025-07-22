@@ -104,15 +104,29 @@ const Home = () => {
 
   const handleAcceptChanges = async () => {
     if (diffData && currentArticle && editorRef.current) {
-      const contentJSON = await editorRef.current.convertMarkdownToBlocksJSON(diffData.new);
-      const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
-      if (updatedArticle) {
-        onArticleUpdate(updatedArticle);
-        toast.success('Article has been updated by the AI.');
-      }
+      await handleGenerateComplete(diffData.new);
     }
     setIsDiffDialogOpen(false);
     setDiffData(null);
+  };
+
+  const handleResearchComplete = async (researchData: any) => {
+    if (researchData && currentArticle) {
+      const updatedArticle = await updateArticle(currentArticle.id, { research_data: researchData });
+      if (updatedArticle) {
+        onArticleUpdate(updatedArticle);
+      }
+    }
+  };
+
+  const handleGenerateComplete = async (content: string) => {
+    if (content && currentArticle && editorRef.current) {
+      const contentJSON = await editorRef.current.convertMarkdownToBlocksJSON(content);
+      const updatedArticle = await updateArticle(currentArticle.id, { content: contentJSON });
+      if (updatedArticle) {
+        onArticleUpdate(updatedArticle);
+      }
+    }
   };
 
   if (authLoading || !user) {
@@ -191,7 +205,17 @@ const Home = () => {
         </main>
       </div>
       {diffData && <DiffViewerDialog isOpen={isDiffDialogOpen} onClose={() => setIsDiffDialogOpen(false)} oldContent={diffData.old} newContent={diffData.new} onAccept={handleAcceptChanges} />}
-      <ChatDialog isOpen={isChatDialogOpen} onClose={() => setIsChatDialogOpen(false)} currentArticle={currentArticle} onEdit={handleAiEdit} articleMarkdown={markdownContent} conversationId={conversationId} setConversationId={setConversationId} />
+      <ChatDialog 
+        isOpen={isChatDialogOpen} 
+        onClose={() => setIsChatDialogOpen(false)} 
+        currentArticle={currentArticle} 
+        onEdit={handleAiEdit} 
+        articleMarkdown={markdownContent} 
+        conversationId={conversationId} 
+        setConversationId={setConversationId}
+        onResearchComplete={handleResearchComplete}
+        onGenerateComplete={handleGenerateComplete}
+      />
     </div>
   );
 };
