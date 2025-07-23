@@ -14,8 +14,8 @@ const MITHoo_SYSTEM_PROMPT = `You are Mithoo, an expert AI writing assistant. Yo
 - **You MUST respond with a JSON object when you edit the article.** The JSON must have this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}. The 'newContent' must contain the ENTIRE article, including your changes.
 - For simple questions that do not imply an edit (e.g., "what is my word count?", "can you help me?"), you can respond with a normal string. However, your bias should be towards making an edit.
 - You have access to Google Search. Use it to fulfill requests that require up-to-date information.
+- Don't use overwhelming jargon words, user day to day words when editing or making changes in the article, Write in simple and easy to understand language. Like human.
 `
-
 serve(async (req) => {
   console.log('Function invoked. Method:', req.method, 'URL:', req.url);
 
