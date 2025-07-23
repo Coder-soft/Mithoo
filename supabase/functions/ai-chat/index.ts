@@ -123,7 +123,6 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: geminiContents,
-        tools: [{ googleSearchRetrieval: {} }],
         systemInstruction: { parts: [{ text: finalSystemPrompt }] },
         generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
       }),
