@@ -16,16 +16,21 @@ const MITHoo_SYSTEM_PROMPT = `You are Mithoo, a helpful AI writing assistant. Yo
 `
 
 serve(async (req) => {
+  console.log('Function invoked. Method:', req.method, 'URL:', req.url);
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    console.log('Handling OPTIONS request.');
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { message, conversationId, articleId, userId, articleMarkdown } = await req.json()
+    console.log('Attempting to parse request body...');
+    const { message, conversationId, articleId, userId, articleMarkdown } = await req.json();
+    console.log('Request body parsed successfully.');
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: req.headers.get('Authorization') || '' } } }
     )
 
     const { data: { user } } = await supabaseClient.auth.getUser()
@@ -112,7 +117,8 @@ serve(async (req) => {
       parts: [{ text: msg.content }]
     }));
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    console.log('Sending request to Gemini API...');
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -178,10 +184,10 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in ai-chat function:', error)
+    console.error('CRITICAL_ERROR in ai-chat function:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return new Response(
       JSON.stringify({ error: 'An unexpected error occurred', details: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    );
   }
 })
