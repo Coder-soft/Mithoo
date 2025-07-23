@@ -159,26 +159,34 @@ serve(async (req) => {
     let responsePayload: object;
     let aiMessageContent: string;
 
-    // Clean the response to remove markdown code blocks if they exist
-    let cleanedResponse = rawResponse.trim();
-    if (cleanedResponse.startsWith('```json')) {
-      cleanedResponse = cleanedResponse.substring(7).trim();
-    }
-    if (cleanedResponse.endsWith('```')) {
-      cleanedResponse = cleanedResponse.slice(0, -3).trim();
-    }
+    // More robust JSON extraction
+    const jsonStartIndex = rawResponse.indexOf('{');
+    const jsonEndIndex = rawResponse.lastIndexOf('}');
 
-    try {
-      const parsedResponse = JSON.parse(cleanedResponse);
-      if (parsedResponse.explanation && parsedResponse.newContent) {
-        aiMessageContent = parsedResponse.explanation;
-        responsePayload = {
-          type: 'edit',
-          explanation: parsedResponse.explanation,
-          newContent: parsedResponse.newContent,
-          conversationId: conversation.id,
-        };
-      } else {
+    if (jsonStartIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+      const jsonString = rawResponse.substring(jsonStartIndex, jsonEndIndex + 1);
+      try {
+        const parsedJson = JSON.parse(jsonString);
+        if (parsedJson.explanation && parsedJson.newContent) {
+          // It's a valid edit object
+          aiMessageContent = parsedJson.explanation;
+          responsePayload = {
+            type: 'edit',
+            explanation: parsedJson.explanation,
+            newContent: parsedJson.newContent,
+            conversationId: conversation.id,
+          };
+        } else {
+          // It's a JSON object, but not the one we want. Treat as chat.
+          aiMessageContent = rawResponse;
+          responsePayload = {
+            type: 'chat',
+            content: rawResponse,
+            conversationId: conversation.id,
+          };
+        }
+      } catch (e) {
+        // Parsing failed, treat as a simple chat message
         aiMessageContent = rawResponse;
         responsePayload = {
           type: 'chat',
@@ -186,7 +194,8 @@ serve(async (req) => {
           conversationId: conversation.id,
         };
       }
-    } catch (e) {
+    } else {
+      // No JSON object found, treat as a simple chat message
       aiMessageContent = rawResponse;
       responsePayload = {
         type: 'chat',
