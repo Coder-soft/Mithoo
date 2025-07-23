@@ -23,11 +23,11 @@ export const useAI = () => {
     }
   };
 
-  const chatWithAI = async (message: string, conversationId?: string, articleId?: string, articleMarkdown?: string) => {
+  const chatWithAI = async (message: string, conversationId?: string, articleId?: string, articleMarkdown?: string, enableSearch?: boolean) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message, conversationId, articleId, userId: user?.id, articleMarkdown }
+        body: { message, conversationId, articleId, userId: user?.id, articleMarkdown, enableSearch }
       });
 
       if (error) throw error;

@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Bot, User, Send, Lightbulb, Search, Edit3, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Bot, User, Send, Lightbulb, Search, Edit3, Loader2, Globe } from "lucide-react";
 import { useAI } from "@/hooks/useAI";
 import { useAuth } from "@/hooks/useAuth";
 import { Article } from "@/hooks/useArticle";
@@ -53,6 +55,7 @@ export const ChatDialog = ({
   const { chatWithAI, researchTopic, generateArticle, loading, getConversation } = useAI();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [enableSearch, setEnableSearch] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,7 +91,7 @@ export const ChatDialog = ({
     setMessages(prev => [...prev, userMessage, tempAiMessage]);
     
     try {
-      const response = await chatWithAI(messageContent, conversationId || undefined, currentArticle?.id, articleMarkdown);
+      const response = await chatWithAI(messageContent, conversationId || undefined, currentArticle?.id, articleMarkdown, enableSearch);
       if (response) {
         let aiMessage: Message;
         if (response.type === 'edit' && onEdit) {
@@ -182,6 +185,17 @@ export const ChatDialog = ({
             </div>
           </ScrollArea>
           <div className="p-4 border-t border-border">
+            <div className="flex items-center space-x-2 mb-3">
+              <Switch 
+                id="enable-search" 
+                checked={enableSearch} 
+                onCheckedChange={setEnableSearch}
+              />
+              <Label htmlFor="enable-search" className="flex items-center space-x-2 text-sm">
+                <Globe className="w-4 h-4" />
+                <span>Enable web search</span>
+              </Label>
+            </div>
             <div className="flex space-x-2">
               <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Ask for edits or brainstorm ideas..." className="flex-1 bg-background" onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} />
               <Button size="sm" onClick={handleSendMessage} disabled={!inputValue.trim() || loading} className="px-3">

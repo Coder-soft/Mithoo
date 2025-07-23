@@ -25,8 +25,8 @@ serve(async (req) => {
 
   try {
     console.log('Attempting to parse request body...');
-    const { message, conversationId, articleId, userId, articleMarkdown } = await req.json();
-    console.log('Request body parsed successfully.');
+    const { message, conversationId, articleId, userId, articleMarkdown, enableSearch } = await req.json();
+    console.log('Request body parsed successfully. Search enabled:', enableSearch);
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -118,14 +118,24 @@ serve(async (req) => {
     }));
 
     console.log('Sending request to Gemini API...');
+    
+    // Build request body conditionally including Google Search
+    const requestBody: any = {
+      contents: geminiContents,
+      systemInstruction: { parts: [{ text: finalSystemPrompt }] },
+      generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
+    };
+
+    // Add Google Search tool if search is enabled
+    if (enableSearch) {
+      requestBody.tools = [{ googleSearch: {} }];
+      console.log('Google Search tool enabled for this request');
+    }
+    
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: geminiContents,
-        systemInstruction: { parts: [{ text: finalSystemPrompt }] },
-        generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     const geminiData = await geminiResponse.json()
