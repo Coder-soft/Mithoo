@@ -33,10 +33,9 @@ interface ChatDialogProps {
 }
 
 const AiLoadingIndicator = () => (
-  <div className="flex items-center space-x-1 p-2">
-    <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-    <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-    <span className="w-2 h-2 bg-current rounded-full animate-bounce"></span>
+  <div className="flex items-center space-x-2 p-2 text-sm text-muted-foreground">
+    <Loader2 className="w-4 h-4 animate-spin" />
+    <span>Mithoo is thinking...</span>
   </div>
 );
 
