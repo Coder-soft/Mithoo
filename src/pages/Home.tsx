@@ -50,16 +50,34 @@ const Home = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+      if (isCtrlOrMeta && e.key === 'l') {
         e.preventDefault();
         setIsChatDialogOpen(prev => !prev);
+      }
+
+      if (isCtrlOrMeta && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+        e.preventDefault();
+        if (openArticles.length > 1 && activeArticleId) {
+          const currentIndex = openArticles.findIndex(a => a.id === activeArticleId);
+          if (currentIndex !== -1) {
+            let nextIndex;
+            if (e.key === 'ArrowRight') {
+              nextIndex = (currentIndex + 1) % openArticles.length;
+            } else { // ArrowLeft
+              nextIndex = (currentIndex - 1 + openArticles.length) % openArticles.length;
+            }
+            setActiveArticleId(openArticles[nextIndex].id);
+          }
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [activeArticleId, openArticles]);
 
   const handleSelectArticle = (article: Article) => {
     if (!openArticles.some(a => a.id === article.id)) {
