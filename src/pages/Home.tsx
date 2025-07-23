@@ -187,14 +187,14 @@ const Home = () => {
           </div>
         </aside>
 
-        <main className="flex-grow flex flex-col relative">
-          <Button variant="outline" size="icon" className="absolute top-4 left-4 z-10 h-8 w-8" onClick={() => setIsPanelOpen(!isPanelOpen)}>
-            {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
-          </Button>
-          <div className="flex-shrink-0 border-b border-border bg-background">
-            <div className="flex items-center space-x-1 p-1">
+        <main className="flex-grow flex flex-col">
+          <div className="flex-shrink-0 border-b border-border bg-background flex items-center px-2">
+            <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setIsPanelOpen(!isPanelOpen)}>
+              {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+            </Button>
+            <div className="flex items-center space-x-1 p-1 overflow-x-auto">
               {openArticles.map(article => (
-                <button key={article.id} onClick={() => setActiveArticleId(article.id)} className={cn("flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors", activeArticleId === article.id ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50")}>
+                <button key={article.id} onClick={() => setActiveArticleId(article.id)} className={cn("flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors flex-shrink-0", activeArticleId === article.id ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50")}>
                   <span>{article.title}</span>
                   <X className="w-3 h-3 rounded-full hover:bg-destructive/20" onClick={(e) => handleCloseTab(e, article.id)} />
                 </button>
