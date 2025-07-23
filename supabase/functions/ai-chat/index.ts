@@ -158,8 +158,17 @@ serve(async (req) => {
     let responsePayload: object;
     let aiMessageContent: string;
 
+    // Clean the response to remove markdown code blocks if they exist
+    let cleanedResponse = rawResponse.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.substring(7).trim();
+    }
+    if (cleanedResponse.endsWith('```')) {
+      cleanedResponse = cleanedResponse.slice(0, -3).trim();
+    }
+
     try {
-      const parsedResponse = JSON.parse(rawResponse);
+      const parsedResponse = JSON.parse(cleanedResponse);
       if (parsedResponse.explanation && parsedResponse.newContent) {
         aiMessageContent = parsedResponse.explanation;
         responsePayload = {
