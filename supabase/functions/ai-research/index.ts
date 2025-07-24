@@ -53,7 +53,7 @@ serve(async (req) => {
 
     const researchPrompt = `Research the topic: "${topic}". Keywords: ${keywords ? keywords.join(', ') : 'None'}. Provide a detailed summary of your findings.`
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
