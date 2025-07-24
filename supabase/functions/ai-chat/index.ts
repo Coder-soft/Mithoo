@@ -89,7 +89,7 @@ serve(async (req) => {
 
     const allMessages = [...history, { role: 'user', content: message }];
 
-    // Consolidate consecutive messages of the same role to ensure valid alternating history.
+    // Step 1: Consolidate consecutive messages of the same role.
     const consolidatedMessages = allMessages.reduce((acc, current) => {
         const last = acc.length > 0 ? acc[acc.length - 1] : null;
         if (last && last.role === current.role) {
@@ -100,12 +100,19 @@ serve(async (req) => {
         return acc;
     }, [] as {role: string, content: string}[]);
 
-    // Ensure the sequence starts with a 'user' message.
+    // Step 2: Ensure the sequence starts with a 'user' message.
     const firstUserIndex = consolidatedMessages.findIndex(m => m.role === 'user');
     if (firstUserIndex === -1) {
         throw new Error("Cannot process a conversation without any user messages.");
     }
-    const finalSequence = consolidatedMessages.slice(firstUserIndex);
+    let validSequence = consolidatedMessages.slice(firstUserIndex);
+
+    // Step 3: Ensure roles alternate correctly (user, model, user, model...).
+    const finalSequence = validSequence.filter((msg, index) => {
+        if (index === 0) return true; // First message is already known to be 'user'.
+        const prevRole = validSequence[index - 1].role;
+        return msg.role !== prevRole;
+    });
 
     const geminiContents = finalSequence.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
@@ -114,12 +121,14 @@ serve(async (req) => {
 
     console.log('Sending request to Gemini API...');
     
+    // Build request body conditionally including Google Search
     const requestBody: any = {
       contents: geminiContents,
       systemInstruction: { parts: [{ text: finalSystemPrompt }] },
       generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8192 },
     };
 
+    // Add Google Search tool if search is enabled
     if (enableSearch) {
       requestBody.tools = [{ googleSearchRetrieval: {} }];
       console.log('Google Search tool enabled for this request');
@@ -156,7 +165,7 @@ serve(async (req) => {
         try {
             parsedJson = JSON.parse(trimmedResponse);
         } catch (e) {
-            // Not a valid JSON object
+            // Not a valid JSON object, proceed to check for markdown
         }
     }
 
@@ -166,12 +175,14 @@ serve(async (req) => {
             try {
                 parsedJson = JSON.parse(match[1]);
             } catch (e) {
+                // The content inside markdown is not valid JSON, so we'll treat the whole thing as text
                 parsedJson = null;
             }
         }
     }
 
     if (parsedJson && parsedJson.explanation && parsedJson.newContent) {
+        // It's a valid edit object
         aiMessageContent = parsedJson.explanation;
         responsePayload = {
             type: 'edit',
@@ -180,6 +191,7 @@ serve(async (req) => {
             conversationId: conversation.id,
         };
     } else {
+        // Not a valid edit object, treat as a simple chat message
         aiMessageContent = rawResponse;
         responsePayload = {
             type: 'chat',
