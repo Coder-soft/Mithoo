@@ -86,7 +86,18 @@ export const ChatDialog = ({
   useEffect(() => {
     const loadHistory = async () => {
       if (conversationId) {
-        const history = await getConversation(conversationId) as StoredMessage[];
+        const historyResponse = await getConversation(conversationId);
+        let history: StoredMessage[] = [];
+        
+        if (Array.isArray(historyResponse)) {
+          history = historyResponse.filter(item =>
+            item !== null &&
+            typeof item === 'object' &&
+            (item.role === 'user' || item.role === 'assistant') &&
+            typeof item.content === 'string'
+          ) as StoredMessage[];
+        }
+        
         const formattedHistory: Message[] = history.map((msg, index) => ({
           id: `${conversationId}-${index}`,
           role: msg.role,
@@ -144,8 +155,14 @@ export const ChatDialog = ({
           setEditHistory(prev => [...prev, articleMarkdown]);
         }
 
-        const messageToStream = response.type === 'edit' ? response.explanation : response.content;
-        
+        // Handle different response structures more robustly
+        let messageToStream = '';
+        if (response.type === 'edit') {
+          messageToStream = response.explanation || response.content || 'I have made the requested edits.';
+        } else {
+          messageToStream = response.content || 'I have completed your request.';
+        }
+
         if (messageToStream) {
           let streamedContent = "";
           const tokens = messageToStream.split(" ");
