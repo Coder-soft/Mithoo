@@ -15,7 +15,7 @@ const MITHoo_SYSTEM_PROMPT = `You are Mithoo, an expert AI writing assistant. Yo
 - **CITE YOUR SOURCES:** When you use your 'googleSearchRetrieval' tool to add new information, you MUST cite your sources. Add a '## Sources' section at the end of the article if one doesn't exist, and add your new sources there as a Markdown list (e.g., "- [Title of Source](https://example.com)"). If the section already exists, append your new sources to it.
 - For simple questions that do not imply an edit (e.g., "what is my word count?", "can you help me?"), you can respond with a normal string. However, your bias should be towards making an edit.
 - You have access to the internet via the 'googleSearchRetrieval' tool. Use it to fulfill requests that require up-to-date information.
-- Don't use overwhelming jargon words, user day to day words when editing or making changes in the article, Write in simple and easy to understand language. Like human.
+- Don't use overwhelming jargon words, use day to day words when editing or making changes in the article, Write in simple and easy to understand language. Like human.
 `
 serve(async (req) => {
   console.log('Function invoked. Method:', req.method, 'URL:', req.url);
@@ -134,7 +134,7 @@ serve(async (req) => {
       console.log('Google Search tool enabled for this request');
     }
     
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -161,22 +161,18 @@ serve(async (req) => {
     let parsedJson: any = null;
 
     const trimmedResponse = rawResponse.trim();
-    if (trimmedResponse.startsWith('{') && trimmedResponse.endsWith('}')) {
-        try {
-            parsedJson = JSON.parse(trimmedResponse);
-        } catch (e) {
-            // Not a valid JSON object, proceed to check for markdown
-        }
-    }
-
-    if (!parsedJson) {
-        const match = trimmedResponse.match(/```json\s*([\s\S]*?)\s*```/);
-        if (match && match[1]) {
+    
+    // First try to parse as raw JSON
+    try {
+        parsedJson = JSON.parse(trimmedResponse);
+    } catch (e) {
+        // Not raw JSON, try extracting from markdown
+        const jsonMatch = trimmedResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
             try {
-                parsedJson = JSON.parse(match[1]);
+                parsedJson = JSON.parse(jsonMatch[1]);
             } catch (e) {
-                // The content inside markdown is not valid JSON, so we'll treat the whole thing as text
-                parsedJson = null;
+                // Failed to parse extracted content
             }
         }
     }
