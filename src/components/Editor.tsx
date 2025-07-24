@@ -5,7 +5,8 @@ import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, FileText, Pilcrow, Upload } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Save, FileText, Pilcrow, Upload, Loader2, Sparkles } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
 import { FileUpload } from "./FileUpload";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,8 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   const [title, setTitle] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
+  type HumanizeMode = 'subtle' | 'balanced' | 'strong' | 'stealth';
+  const [humanizing, setHumanizing] = useState(false);
   const [articleFiles, setArticleFiles] = useState<any[]>([]);
 
   const editor: BlockNoteEditor | null = useCreateBlockNote();
@@ -103,6 +106,32 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
     }
   };
 
+  const handleHumanize = async (mode: HumanizeMode) => {
+    if (!editor || !currentArticle) return;
+    setHumanizing(true);
+    try {
+      const markdown = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
+      const humanizeMode = mode;
+      const { data, error } = await supabase.functions.invoke('humanize-text', {
+        body: { text: markdown, mode: humanizeMode }
+      });
+      if (error) throw error;
+      const humanized = (data as any).humanizedText as string;
+      const blocks = await editor.tryParseMarkdownToBlocks(humanized);
+      editor.replaceBlocks(editor.topLevelBlocks, blocks);
+      const stats = getWordAndCharCount(humanized);
+      setWordCount(stats.words);
+      setCharCount(stats.characters);
+      if (onMarkdownChange) onMarkdownChange(humanized);
+      toast.success(`Article humanized using ${mode} mode`);
+    } catch (err: any) {
+      console.error('Humanize error:', err);
+      toast.error(err.message || 'Failed to humanize article');
+    } finally {
+      setHumanizing(false);
+    }
+  };
+
   if (!currentArticle) {
     return (
       <div className="flex-1 flex items-center justify-center bg-muted/30">
@@ -119,7 +148,24 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
     <div className="flex-1 flex flex-col h-full bg-background text-foreground overflow-hidden">
       <div className="p-4 border-b border-border flex items-center justify-between gap-4 flex-shrink-0">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article Title..." className="text-xl font-semibold border-none bg-transparent focus-visible:ring-0 p-0 h-auto" />
-        <Button size="sm" onClick={handleSave}><Save className="w-4 h-4 mr-2" />Save</Button>
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" disabled={humanizing}>
+                {humanizing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                Humanize
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-40">
+              {(['subtle', 'balanced', 'strong', 'stealth'] as HumanizeMode[]).map(m => (
+                <Button key={m} variant="ghost" className="w-full justify-start" onClick={() => handleHumanize(m)} disabled={humanizing}>
+                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <Button size="sm" onClick={handleSave}><Save className="w-4 h-4 mr-2" />Save</Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">

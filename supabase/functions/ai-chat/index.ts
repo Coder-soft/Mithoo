@@ -130,7 +130,7 @@ serve(async (req) => {
 
     // Add Google Search tool if search is enabled
     if (enableSearch) {
-      requestBody.tools = [{ googleSearchRetrieval: {} }];
+      requestBody.tools = [{ google_search: {} }];
       console.log('Google Search tool enabled for this request');
     }
     

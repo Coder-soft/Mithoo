@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 const MITHoo_SYSTEM_PROMPT = `You are Mithoo, an expert AI research assistant.
-Your SOLE function is to use the provided 'googleSearchRetrieval' tool to find the most relevant, up-to-date information on a given topic.
+Your SOLE function is to use the provided 'google_search' tool to find the most relevant, up-to-date information on a given topic.
 
 **CRITICAL INSTRUCTIONS:**
 1.  **YOU MUST USE THE SEARCH TOOL:** When given a topic, execute a web search immediately.
@@ -58,7 +58,7 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: researchPrompt }] }],
-        tools: [{ googleSearchRetrieval: {} }],
+        tools: [{ google_search: {} }],
         systemInstruction: { parts: [{ text: MITHoo_SYSTEM_PROMPT }] }
       }),
     })
