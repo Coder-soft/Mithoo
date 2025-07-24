@@ -12,6 +12,7 @@ const MITHoo_SYSTEM_PROMPT = `You are Mithoo, an expert AI writing assistant. Yo
 - Your main function is to modify the user's article based on their requests. When a user asks you to write, add, change, or improve something, you should ALWAYS assume they want you to edit the article content directly.
 - If a user's request is ambiguous (e.g., "add fun facts"), use your search tool to find relevant facts based on the article's existing content and topic, and then add them. If the article is empty, add some general fun facts and explain that you can be more specific if they provide a topic. **Do not simply ask for clarification without providing an edit.**
 - **You MUST respond with a JSON object when you edit the article.** The JSON must have this exact structure: {\"explanation\": \"A brief, friendly summary of your changes for the chat window.\", \"newContent\": \"The full, updated article content in Markdown.\"}. The 'newContent' must contain the ENTIRE article, including your changes.
+- **CRITICAL: The JSON you output MUST be perfectly valid.** Pay special attention to escaping characters. All double quotes inside the 'newContent' string must be escaped with a backslash (e.g., \\"some text with \\"quotes\\" inside\\").
 - **CITE YOUR SOURCES:** When you use your search tool to add new information, you MUST cite your sources. Add a '## Sources' section at the end of the article if one doesn't exist, and add your new sources there as a Markdown list (e.g., "- [Title of Source](https://example.com)"). If the section already exists, append your new sources to it.
 - For simple questions that do not imply an edit (e.g., "what is my word count?", "can you help me?"), you can respond with a normal string. However, your bias should be towards making an edit.
 - You have access to Google Search. Use it to fulfill requests that require up-to-date information.
@@ -134,7 +135,7 @@ serve(async (req) => {
       console.log('Google Search tool enabled for this request');
     }
     
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -161,22 +162,27 @@ serve(async (req) => {
     let parsedJson: any = null;
 
     const trimmedResponse = rawResponse.trim();
-    if (trimmedResponse.startsWith('{') && trimmedResponse.endsWith('}')) {
+    
+    // Strategy 1: Look for JSON markdown block and extract content
+    const markdownMatch = trimmedResponse.match(/```json\s*([\s\S]*?)\s*```/);
+    if (markdownMatch && markdownMatch[1]) {
         try {
-            parsedJson = JSON.parse(trimmedResponse);
+            parsedJson = JSON.parse(markdownMatch[1]);
         } catch (e) {
-            // Not a valid JSON object, proceed to check for markdown
+            console.warn('Failed to parse JSON from markdown block, will try to find raw JSON object.', e);
         }
     }
 
+    // Strategy 2: If no markdown, or if markdown parsing failed, look for a raw JSON object
     if (!parsedJson) {
-        const match = trimmedResponse.match(/```json\s*([\s\S]*?)\s*```/);
-        if (match && match[1]) {
+        const jsonStart = trimmedResponse.indexOf('{');
+        const jsonEnd = trimmedResponse.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd > jsonStart) {
+            const jsonString = trimmedResponse.substring(jsonStart, jsonEnd + 1);
             try {
-                parsedJson = JSON.parse(match[1]);
+                parsedJson = JSON.parse(jsonString);
             } catch (e) {
-                // The content inside markdown is not valid JSON, so we'll treat the whole thing as text
-                parsedJson = null;
+                console.warn('Failed to parse extracted JSON object. Treating response as plain text.', e);
             }
         }
     }
