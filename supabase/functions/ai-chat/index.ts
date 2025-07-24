@@ -158,50 +158,46 @@ serve(async (req) => {
 
     let responsePayload: object;
     let aiMessageContent: string;
+    let parsedJson: any = null;
 
-    // More robust JSON extraction
-    const jsonStartIndex = rawResponse.indexOf('{');
-    const jsonEndIndex = rawResponse.lastIndexOf('}');
+    const trimmedResponse = rawResponse.trim();
+    if (trimmedResponse.startsWith('{') && trimmedResponse.endsWith('}')) {
+        try {
+            parsedJson = JSON.parse(trimmedResponse);
+        } catch (e) {
+            // Not a valid JSON object, proceed to check for markdown
+        }
+    }
 
-    if (jsonStartIndex !== -1 && jsonEndIndex > jsonStartIndex) {
-      const jsonString = rawResponse.substring(jsonStartIndex, jsonEndIndex + 1);
-      try {
-        const parsedJson = JSON.parse(jsonString);
-        if (parsedJson.explanation && parsedJson.newContent) {
-          // It's a valid edit object
-          aiMessageContent = parsedJson.explanation;
-          responsePayload = {
+    if (!parsedJson) {
+        const match = trimmedResponse.match(/```json\s*([\s\S]*?)\s*```/);
+        if (match && match[1]) {
+            try {
+                parsedJson = JSON.parse(match[1]);
+            } catch (e) {
+                // The content inside markdown is not valid JSON, so we'll treat the whole thing as text
+                parsedJson = null;
+            }
+        }
+    }
+
+    if (parsedJson && parsedJson.explanation && parsedJson.newContent) {
+        // It's a valid edit object
+        aiMessageContent = parsedJson.explanation;
+        responsePayload = {
             type: 'edit',
             explanation: parsedJson.explanation,
             newContent: parsedJson.newContent,
             conversationId: conversation.id,
-          };
-        } else {
-          // It's a JSON object, but not the one we want. Treat as chat.
-          aiMessageContent = rawResponse;
-          responsePayload = {
+        };
+    } else {
+        // Not a valid edit object, treat as a simple chat message
+        aiMessageContent = rawResponse;
+        responsePayload = {
             type: 'chat',
             content: rawResponse,
             conversationId: conversation.id,
-          };
-        }
-      } catch (e) {
-        // Parsing failed, treat as a simple chat message
-        aiMessageContent = rawResponse;
-        responsePayload = {
-          type: 'chat',
-          content: rawResponse,
-          conversationId: conversation.id,
         };
-      }
-    } else {
-      // No JSON object found, treat as a simple chat message
-      aiMessageContent = rawResponse;
-      responsePayload = {
-        type: 'chat',
-        content: rawResponse,
-        conversationId: conversation.id,
-      };
     }
 
     const updatedMessages = [...finalSequence, { role: 'assistant', content: aiMessageContent }];
