@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { PenTool, ArrowRight } from "lucide-react";
+import FeatureShowcase from "@/components/FeatureShowcase";
 
 const MinimalLanding = () => {
   const { user, loading } = useAuth();
@@ -13,6 +14,10 @@ const MinimalLanding = () => {
       navigate("/app");
     }
   }, [user, navigate]);
+
+  const scrollToFeatures = () => {
+    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   if (loading || user) {
     return (
@@ -27,7 +32,7 @@ const MinimalLanding = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="py-4 px-6 md:px-10">
+      <header className="py-4 px-6 md:px-10 sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/20">
         <div className="container mx-auto flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -35,7 +40,8 @@ const MinimalLanding = () => {
             </div>
             <h1 className="text-xl font-bold text-foreground">Mithoo</h1>
           </Link>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" onClick={scrollToFeatures}>Features</Button>
             <Button asChild>
               <a href="https://phattiforms.vercel.app/forms/view/4f1fae8b-d136-4a79-a99c-925bdd8929db" target="_blank" rel="noopener noreferrer">Apply for Beta Testing</a>
             </Button>
@@ -43,26 +49,31 @@ const MinimalLanding = () => {
         </div>
       </header>
 
-      <main className="flex-grow flex items-center justify-center">
-        <div className="container mx-auto px-6 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground max-w-4xl mx-auto">
-            Effortless Article Creation, Powered by AI
-          </h1>
-          <p className="mt-6 text-lg md:text-xl max-w-2xl mx-auto text-muted-foreground">
-            From research to final draft, Mithoo is your intelligent writing partner. Streamline your content creation process and publish faster.
-          </p>
-          <div className="mt-8">
-            <Button asChild size="lg">
-              <a href="https://phattiforms.vercel.app/forms/view/4f1fae8b-d136-4a79-a99c-925bdd8929db" target="_blank" rel="noopener noreferrer">
-                Apply for Beta Testing
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </a>
-            </Button>
+      <main className="flex-grow">
+        <section className="flex items-center justify-center py-24 md:py-32">
+          <div className="container mx-auto px-6 text-center">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground max-w-4xl mx-auto">
+              Effortless Article Creation, Powered by AI
+            </h1>
+            <p className="mt-6 text-lg md:text-xl max-w-2xl mx-auto text-muted-foreground">
+              From research to final draft, Mithoo is your intelligent writing partner. Streamline your content creation process and publish faster.
+            </p>
+            <div className="mt-8">
+              <Button asChild size="lg">
+                <a href="https://phattiforms.vercel.app/forms/view/4f1fae8b-d136-4a79-a99c-925bdd8929db" target="_blank" rel="noopener noreferrer">
+                  Apply for Beta Testing
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </a>
+              </Button>
+            </div>
           </div>
-        </div>
+        </section>
+        
+        <FeatureShowcase />
+
       </main>
 
-      <footer className="py-6">
+      <footer className="py-6 bg-muted/30">
         <div className="container mx-auto text-center">
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} Mithoo. All rights reserved.
