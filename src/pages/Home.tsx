@@ -36,6 +36,7 @@ const Home = () => {
   const [diffData, setDiffData] = useState<{ old: string; new: string } | null>(null);
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   useEffect(() => {
