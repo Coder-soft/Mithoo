@@ -42,8 +42,8 @@ const MinimalLanding = () => {
           </Link>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={scrollToFeatures}>Features</Button>
-            <Button asChild>
-              <Link to="/login">Sign In</Link>
+            <Button asChild className="transition-all duration-300">
+              <Link to="/login" className="hover:text-primary-foreground hover:no-underline">Sign In</Link>
             </Button>
           </div>
         </div>
@@ -59,8 +59,8 @@ const MinimalLanding = () => {
               From research to final draft, Mithoo is your intelligent writing partner. Streamline your content creation process and publish faster.
             </p>
             <div className="mt-8">
-              <Button asChild size="lg">
-                <Link to="/login">
+              <Button asChild size="lg" className="transition-all duration-300">
+                <Link to="/login" className="hover:text-primary-foreground hover:no-underline">
                   Sign In
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
