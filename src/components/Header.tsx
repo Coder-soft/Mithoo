@@ -14,7 +14,7 @@ export const Header = ({ onCreateArticle }: HeaderProps) => {
   const { user, signOut } = useAuth();
 
   return (
-    <header className="h-16 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50">
+    <header className="h-20 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50">
       <div className="container mx-auto flex h-full items-center justify-between px-6">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
