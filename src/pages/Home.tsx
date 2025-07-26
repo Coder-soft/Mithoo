@@ -211,7 +211,7 @@ const Home = () => {
             <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setIsPanelOpen(!isPanelOpen)}>
               {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
             </Button>
-            <div className="flex min-w-0 items-center space-x-1 p-1 overflow-x-auto">
+            <div className="flex items-center space-x-1 p-1 overflow-x-auto">
               {openArticles.map(article => (
                 <button key={article.id} onClick={() => setActiveArticleId(article.id)} className={cn("flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors flex-shrink-0", activeArticleId === article.id ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50")}>
                   <span>{article.title}</span>
