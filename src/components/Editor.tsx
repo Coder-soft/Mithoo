@@ -134,9 +134,15 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
     <div className="flex-1 h-full bg-background text-foreground overflow-y-auto">
       <div className="p-4 border-b border-border flex items-center justify-between gap-4">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article Title..." className="text-xl font-semibold border-none bg-transparent focus-visible:ring-0 p-0 h-auto" />
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1"><Pilcrow className="w-4 h-4" /><span>{wordCount} words</span></div>
-          <div className="flex items-center gap-1"><span className="font-mono text-sm">T</span><span>{charCount} characters</span></div>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
+          <div className="flex items-center gap-1 whitespace-nowrap">
+            <Pilcrow className="w-4 h-4" />
+            <span>{wordCount} words</span>
+          </div>
+          <div className="flex items-center gap-1 whitespace-nowrap">
+            <span className="font-mono text-sm">T</span>
+            <span>{charCount} characters</span>
+          </div>
           
           <Popover>
             <PopoverTrigger asChild>
