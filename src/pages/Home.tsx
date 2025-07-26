@@ -13,9 +13,6 @@ import { useNavigate } from "react-router-dom";
 import { ChatDialog } from "@/components/ChatDialog";
 import { DiffViewerDialog } from "@/components/DiffViewerDialog";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-
-type HumanizeMode = 'subtle' | 'balanced' | 'strong' | 'stealth';
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
@@ -29,6 +26,9 @@ const Home = () => {
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
   
   const currentArticle = openArticles.find(a => a.id === activeArticleId) || null;
+  const liveWordCount = markdownContent.trim().length
+    ? markdownContent.trim().split(/\s+/).filter(Boolean).length
+    : 0;
   const navigate = useNavigate();
 
   const editorRef = useRef<EditorRef>(null);
@@ -36,13 +36,8 @@ const Home = () => {
   const [diffData, setDiffData] = useState<{ old: string; new: string } | null>(null);
 
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
 
-  // State lifted from Editor
-  const [title, setTitle] = useState("");
-  const [wordCount, setWordCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
-  const [humanizing, setHumanizing] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user && !authLoading) {
@@ -52,12 +47,7 @@ const Home = () => {
 
   useEffect(() => {
     setConversationId(null);
-    if (currentArticle) {
-      setTitle(currentArticle.title);
-    } else {
-      setTitle("");
-    }
-  }, [activeArticleId, currentArticle]);
+  }, [activeArticleId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -158,42 +148,6 @@ const Home = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!currentArticle || !editorRef.current) return;
-    const content = await editorRef.current.getEditorContentAsJSON();
-    const updated = await updateArticle(currentArticle.id, { title, content, word_count: wordCount });
-    if (updated) {
-      onArticleUpdate(updated);
-      toast.success('Article saved successfully');
-    }
-  };
-
-  const handleHumanize = async (mode: HumanizeMode) => {
-    if (!editorRef.current || !currentArticle) return;
-    setHumanizing(true);
-    try {
-      const markdown = await editorRef.current.getEditorContentAsMarkdown();
-      const { data, error } = await supabase.functions.invoke('humanize-text', {
-        body: { text: markdown, mode }
-      });
-      if (error) throw error;
-      const humanized = (data as any).humanizedText as string;
-      await editorRef.current.setEditorContentFromMarkdown(humanized);
-      toast.success(`Article humanized using ${mode} mode`);
-    } catch (err: any) {
-      console.error('Humanize error:', err);
-      toast.error(err.message || 'Failed to humanize article');
-    } finally {
-      setHumanizing(false);
-    }
-  };
-
-  const handleMarkdownChange = (markdown: string, words: number, chars: number) => {
-    setMarkdownContent(markdown);
-    setWordCount(words);
-    setCharCount(chars);
-  };
-
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -207,17 +161,7 @@ const Home = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col">
-      <Header
-        onCreateArticle={() => setShowNewArticleDialog(true)}
-        currentArticle={currentArticle}
-        title={title}
-        onTitleChange={setTitle}
-        onSave={handleSave}
-        wordCount={wordCount}
-        charCount={charCount}
-        onHumanize={handleHumanize}
-        isHumanizing={humanizing}
-      />
+      <Header onCreateArticle={() => setShowNewArticleDialog(true)} />
       <div className="flex-grow flex overflow-hidden">
         <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-background/30 backdrop-blur-md border-r border-border">
           <Button variant={'secondary'} size="icon" aria-label="Articles"><Book className="w-5 h-5" /></Button>
@@ -246,7 +190,7 @@ const Home = () => {
                       <FileText className="w-4 h-4 mt-1 text-foreground" />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium truncate text-sm">{article.title}</h4>
-                        <p className="text-xs text-muted-foreground">{article.id === currentArticle?.id ? wordCount : (article.word_count || 0)} words</p>
+                        <p className="text-xs text-muted-foreground">{article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words</p>
                       </div>
                     </div>
                   </Card>
@@ -276,7 +220,7 @@ const Home = () => {
               ))}
             </div>
           </div>
-          <Editor ref={editorRef} key={currentArticle?.id || 'no-article'} currentArticle={currentArticle} onArticleUpdate={onArticleUpdate} onMarkdownChange={handleMarkdownChange} />
+          <Editor ref={editorRef} key={currentArticle?.id || 'no-article'} currentArticle={currentArticle} onArticleUpdate={onArticleUpdate} onMarkdownChange={setMarkdownContent} />
         </main>
       </div>
       {diffData && <DiffViewerDialog isOpen={isDiffDialogOpen} onClose={() => setIsDiffDialogOpen(false)} oldContent={diffData.old} newContent={diffData.new} onAccept={handleAcceptChanges} />}
