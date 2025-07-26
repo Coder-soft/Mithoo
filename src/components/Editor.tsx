@@ -176,7 +176,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
           </TabsList>
           
           <TabsContent value="editor" className="flex-1 mt-0">
-            <BlockNoteView editor={editor} theme="light" className="p-6" onChange={async () => {
+            <BlockNoteView editor={editor} theme="dark" className="p-6" onChange={async () => {
               if (editor) {
                 const text = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
                 const stats = getWordAndCharCount(text);

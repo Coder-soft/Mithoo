@@ -342,7 +342,7 @@ export const ChatDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0 bg-background/80 backdrop-blur-lg border-border">
         <DialogHeader className="p-4 border-b">
           <div className="flex justify-between items-center">
             <div>
@@ -400,7 +400,7 @@ export const ChatDialog = ({
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                     {message.role === 'assistant' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </div>
-                  <Card className={cn("p-3 max-w-[calc(100%-3rem)]", message.role === 'assistant' ? 'bg-ai-message border-border' : 'bg-secondary user-prompt')}>
+                  <Card className={cn("p-3 max-w-[calc(100%-3rem)] backdrop-blur-sm", message.role === 'assistant' ? 'bg-ai-message/80 border-border' : 'bg-primary/80 user-prompt')}>
                     <div className="text-sm leading-relaxed break-words">
                       {message.content}
                     </div>

@@ -34,63 +34,63 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 40 25% 97%;
-    --foreground: 220 10% 20%;
+    --background: 220 15% 15%; /* Dark Silver/Charcoal */
+    --foreground: 220 15% 95%; /* Light Silver */
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 25%;
+    --card: 220 15% 20%;
+    --card-foreground: 220 15% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 25%;
+    --popover: 220 15% 18%;
+    --popover-foreground: 220 15% 95%;
 
-    --primary: 0 72% 51%;
-    --primary-foreground: 0 86% 97%;
-    --primary-glow: 0 80% 80%;
+    --primary: 350 85% 55%; /* Red */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 350 80% 80%;
 
-    --secondary: 0 84% 60%;
-    --secondary-foreground: 0 86% 97%;
+    --secondary: 220 15% 30%; /* Muted Gray */
+    --secondary-foreground: 220 15% 95%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 220 15% 25%;
+    --muted-foreground: 220 10% 65%;
 
-    --accent: 0 84% 60%;
-    --accent-foreground: 0 86% 97%;
+    --accent: 350 85% 55%; /* Red */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 350 85% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 80%;
-    --input: 0 0% 80%;
-    --ring: 0 75% 60%;
+    --border: 220 15% 30%;
+    --input: 220 15% 30%;
+    --ring: 350 85% 55%; /* Red */
 
     /* Mithoo specific tokens */
-    --editor-background: 0 0% 100%;
-    --editor-foreground: 220 15% 25%;
-    --chat-background: 240 20% 97%;
-    --ai-message: 220 20% 94%;
-    --user-message: 0 80% 65%;
+    --editor-background: 220 15% 12%;
+    --editor-foreground: 220 15% 95%;
+    --chat-background: 220 15% 18%;
+    --ai-message: 220 15% 22%;
+    --user-message: 350 85% 55%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 80% 65%), hsl(0 75% 75%));
-    --gradient-subtle: linear-gradient(180deg, hsl(240 20% 98%), hsl(240 20% 97%));
+    --gradient-primary: linear-gradient(135deg, hsl(350 85% 55%), hsl(350 75% 65%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 15% 20%), hsl(220 15% 18%));
     
     /* Shadows */
-    --shadow-elegant: 0 10px 30px -10px hsl(0 80% 65% / 0.2);
-    --shadow-subtle: 0 2px 10px -2px hsl(220 20% 30% / 0.1);
+    --shadow-elegant: 0 10px 30px -10px hsl(350 85% 55% / 0.2);
+    --shadow-subtle: 0 2px 10px -2px hsl(220 20% 10% / 0.2);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --radius: 0.5rem;
+    --radius: 1rem; /* Fully rounded corners */
 
-    --sidebar-background: 40 25% 96%;
-    --sidebar-foreground: 220 10% 20%;
-    --sidebar-primary: 0 75% 60%;
+    --sidebar-background: 220 15% 18%;
+    --sidebar-foreground: 220 15% 95%;
+    --sidebar-primary: 350 85% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 88%;
-    --sidebar-accent-foreground: 0 0% 25%;
-    --sidebar-border: 0 0% 80%;
-    --sidebar-ring: 0 75% 60%;
+    --sidebar-accent: 220 15% 25%;
+    --sidebar-accent-foreground: 220 15% 95%;
+    --sidebar-border: 220 15% 30%;
+    --sidebar-ring: 350 85% 55%;
   }
 }
 
@@ -124,16 +124,16 @@ All colors MUST be HSL.
   color: hsl(var(--muted-foreground));
 }
 .diff-viewer .diff-added {
-  background-color: hsl(140 80% 95%);
+  background-color: hsl(140 80% 20%);
 }
 .diff-viewer .diff-removed {
-  background-color: hsl(0 80% 95%);
+  background-color: hsl(0 80% 20%);
 }
 .diff-viewer .diff-gutter-added {
-  background-color: hsl(140 70% 90%);
+  background-color: hsl(140 70% 15%);
 }
 .diff-viewer .diff-gutter-removed {
-  background-color: hsl(0 70% 90%);
+  background-color: hsl(0 70% 15%);
 }
 
 .shiny-text {
@@ -141,7 +141,7 @@ All colors MUST be HSL.
   background: linear-gradient(
     120deg,
     hsl(var(--muted-foreground)) 40%,
-    hsl(var(--background)) 50%,
+    hsl(var(--foreground)) 50%,
     hsl(var(--muted-foreground)) 60%
   );
   background-size: 200% auto;

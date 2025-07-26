@@ -40,13 +40,13 @@ const Login = () => {
                 Write amazing articles with your AI companion.
             </p>
         </div>
-        <div className="bg-card p-8 rounded-lg shadow-subtle border border-border">
+        <div className="bg-card/60 backdrop-blur-lg p-8 rounded-lg shadow-subtle border border-border/50">
             <Auth
               supabaseClient={supabase}
               appearance={{ theme: ThemeSupa }}
               providers={['google']}
               onlyThirdPartyProviders
-              theme="light"
+              theme="dark"
             />
         </div>
       </div>

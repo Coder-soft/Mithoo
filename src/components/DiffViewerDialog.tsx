@@ -14,7 +14,7 @@ interface DiffViewerDialogProps {
 export const DiffViewerDialog = ({ isOpen, onClose, oldContent, newContent, onAccept }: DiffViewerDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col bg-background/80 backdrop-blur-lg border-border">
         <DialogHeader>
           <DialogTitle>AI Suggested Changes</DialogTitle>
           <DialogDescription>
@@ -27,7 +27,7 @@ export const DiffViewerDialog = ({ isOpen, onClose, oldContent, newContent, onAc
             newValue={newContent}
             splitView={true}
             compareMethod={DiffMethod.WORDS}
-            useDarkTheme={false}
+            useDarkTheme={true}
           />
         </div>
         <DialogFooter>

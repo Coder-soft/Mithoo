@@ -163,11 +163,11 @@ const Home = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Header onCreateArticle={() => setShowNewArticleDialog(true)} />
       <div className="flex-grow flex overflow-hidden">
-        <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-muted/30 border-r border-border">
+        <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-background/30 backdrop-blur-md border-r border-border">
           <Button variant={'secondary'} size="icon" aria-label="Articles"><Book className="w-5 h-5" /></Button>
         </nav>
 
-        <aside className={cn("bg-muted/50 border-r border-border transition-all duration-300 ease-in-out flex-shrink-0", isPanelOpen ? 'w-96' : 'w-0')}>
+        <aside className={cn("bg-background/50 backdrop-blur-md border-r border-border transition-all duration-300 ease-in-out flex-shrink-0", isPanelOpen ? 'w-96' : 'w-0')}>
           <div className={cn("h-full flex flex-col", isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
             <div className="p-4 border-b border-border flex items-center justify-between">
               <h2 className="text-lg font-semibold capitalize">Articles</h2>
@@ -185,12 +185,12 @@ const Home = () => {
             <div className="flex-grow overflow-y-auto">
               <div className="p-4 space-y-2">
                 {articles.map((article) => (
-                  <Card key={article.id} className={cn("p-3 cursor-pointer transition-colors hover:bg-accent/80", activeArticleId === article.id ? 'bg-accent' : '')} onClick={() => handleSelectArticle(article)}>
+                  <Card key={article.id} className={cn("p-3 cursor-pointer transition-colors hover:bg-accent/80 bg-card/50 backdrop-blur-sm", activeArticleId === article.id ? 'bg-accent' : '')} onClick={() => handleSelectArticle(article)}>
                     <div className="flex items-start space-x-3">
-                      <FileText className="w-4 h-4 mt-1 text-white" />
+                      <FileText className="w-4 h-4 mt-1 text-foreground" />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium truncate text-sm">{article.title}</h4>
-                        <p className="text-xs text-white">{article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words</p>
+                        <p className="text-xs text-muted-foreground">{article.id === currentArticle?.id ? liveWordCount : (article.word_count || 0)} words</p>
                       </div>
                     </div>
                   </Card>
