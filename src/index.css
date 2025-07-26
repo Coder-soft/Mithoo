@@ -140,15 +140,15 @@ All colors MUST be HSL.
   color: hsl(var(--muted-foreground));
   background: linear-gradient(
     120deg,
-    hsl(var(--muted-foreground)) 30%,
+    hsl(var(--muted-foreground)) 40%,
     hsl(var(--background)) 50%,
-    hsl(var(--muted-foreground)) 70%
+    hsl(var(--muted-foreground)) 60%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine 3s linear infinite;
+  animation: shine 2s linear infinite;
 }
 
 @keyframes shine {
