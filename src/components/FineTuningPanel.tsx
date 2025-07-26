@@ -4,10 +4,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Settings, Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Sparkles, Upload, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useAI } from "@/hooks/useAI";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const FineTuningPanel = () => {
   const { fineTuneModel, loading } = useAI();
@@ -54,17 +54,22 @@ export const FineTuningPanel = () => {
 
   return (
     <Dialog open={showDialog} onOpenChange={setShowDialog}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Settings className="w-4 h-4 mr-2" />
-          <span>Fine-tune AI</span>
-          {fineTuningStatus === 'completed' && (
-            <Badge variant="secondary" className="ml-2 h-4 text-xs">
-              Active
-            </Badge>
-          )}
-        </Button>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Sparkles className="w-5 h-5" />
+              <span className="sr-only">Fine-tune AI</span>
+              {fineTuningStatus === 'completed' && (
+                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+              )}
+            </Button>
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Fine-tune AI</p>
+        </TooltipContent>
+      </Tooltip>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Fine-tune AI Model</DialogTitle>
