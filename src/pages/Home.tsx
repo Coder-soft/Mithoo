@@ -206,7 +206,7 @@ const Home = () => {
           </div>
         </aside>
 
-        <main className="flex-grow flex flex-col">
+        <main className="flex-grow flex flex-col overflow-y-auto">
           <div className="flex-shrink-0 border-b border-border bg-background flex items-center px-2">
             <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setIsPanelOpen(!isPanelOpen)}>
               {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}

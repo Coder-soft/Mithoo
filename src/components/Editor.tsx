@@ -131,7 +131,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   }
 
   return (
-    <div className="flex-1 h-full bg-background text-foreground overflow-y-auto">
+    <div className="flex-1 bg-background text-foreground">
       <div className="p-4 border-b border-border flex items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article Title..." className="text-xl font-semibold border-none bg-transparent focus-visible:ring-0 p-0 h-auto w-full" />
