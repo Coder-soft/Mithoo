@@ -128,7 +128,6 @@ export const UserPreferences = () => {
                 href="https://makersuite.google.com/app/apikey" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
               >
                 Google AI Studio
               </a>

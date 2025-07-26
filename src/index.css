@@ -102,6 +102,19 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom selection styles */
+  ::selection {
+    @apply bg-primary text-primary-foreground;
+  }
+  ::-moz-selection { /* Firefox */
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* Custom link styles */
+  a {
+    @apply text-primary transition-colors hover:text-primary/80 hover:underline;
+  }
 }
 
 /* Styles for React-Diff-Viewer */
