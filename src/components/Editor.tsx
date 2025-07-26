@@ -4,7 +4,6 @@ import { Block, BlockNoteEditor } from "@blocknote/core";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Save, FileText, Pilcrow, Upload, Loader2, Sparkles } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
@@ -148,7 +147,41 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
     <div className="flex-1 flex flex-col h-full bg-background text-foreground overflow-hidden">
       <div className="p-4 border-b border-border flex items-center justify-between gap-4 flex-shrink-0">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article Title..." className="text-xl font-semibold border-none bg-transparent focus-visible:ring-0 p-0 h-auto" />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1"><Pilcrow className="w-4 h-4" /><span>{wordCount} words</span></div>
+          <div className="flex items-center gap-1"><span className="font-mono text-sm">T</span><span>{charCount} characters</span></div>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Upload className="w-4 h-4 mr-2" />
+                Files ({articleFiles.length})
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-4">
+              <FileUpload articleId={currentArticle.id} onFileUploaded={(file) => setArticleFiles(prev => [file, ...prev])} />
+              {articleFiles.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="font-medium">Uploaded Files</h4>
+                  <div className="grid gap-2 max-h-64 overflow-y-auto">
+                    {articleFiles.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between p-2 border rounded">
+                        <div className="flex items-center space-x-2">
+                          {file.file_type.startsWith('image/') && <img src={file.file_url} alt={file.file_name} className="w-8 h-8 object-cover rounded" />}
+                          <div>
+                            <div className="font-medium text-xs truncate w-40">{file.file_name}</div>
+                            <div className="text-xs text-muted-foreground">{(file.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => window.open(file.file_url, '_blank')}>View</Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant="outline" disabled={humanizing}>
@@ -169,52 +202,15 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <Tabs defaultValue="editor" className="h-full flex flex-col">
-          <TabsList className="mx-6 mt-4">
-            <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="files">Files ({articleFiles.length})</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="editor" className="flex-1 mt-0">
-            <BlockNoteView editor={editor} theme="dark" className="p-6" onChange={async () => {
-              if (editor) {
-                const text = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
-                const stats = getWordAndCharCount(text);
-                setWordCount(stats.words);
-                setCharCount(stats.characters);
-                if (onMarkdownChange) onMarkdownChange(text);
-              }
-            }} />
-          </TabsContent>
-          
-          <TabsContent value="files" className="flex-1 mt-0 p-6">
-            <FileUpload articleId={currentArticle.id} onFileUploaded={(file) => setArticleFiles(prev => [file, ...prev])} />
-            {articleFiles.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <h4 className="font-medium">Uploaded Files</h4>
-                <div className="grid gap-2">
-                  {articleFiles.map((file) => (
-                    <div key={file.id} className="flex items-center justify-between p-3 border rounded">
-                      <div className="flex items-center space-x-3">
-                        {file.file_type.startsWith('image/') && <img src={file.file_url} alt={file.file_name} className="w-10 h-10 object-cover rounded" />}
-                        <div>
-                          <div className="font-medium text-sm">{file.file_name}</div>
-                          <div className="text-xs text-muted-foreground">{(file.file_size / 1024 / 1024).toFixed(2)} MB</div>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => window.open(file.file_url, '_blank')}>View</Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      <div className="p-2 border-t border-border text-xs text-muted-foreground flex items-center justify-end gap-4 flex-shrink-0">
-        <div className="flex items-center gap-1"><Pilcrow className="w-3 h-3" /><span>{wordCount} words</span></div>
-        <div className="flex items-center gap-1"><span className="font-mono text-xs">T</span><span>{charCount} characters</span></div>
+        <BlockNoteView editor={editor} theme="dark" className="p-6" onChange={async () => {
+          if (editor) {
+            const text = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
+            const stats = getWordAndCharCount(text);
+            setWordCount(stats.words);
+            setCharCount(stats.characters);
+            if (onMarkdownChange) onMarkdownChange(text);
+          }
+        }} />
       </div>
     </div>
   );
