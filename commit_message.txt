@@ -1,0 +1,5 @@
+feat: Add Ctrl+L shortcut for AI chat
+
+Adds a keyboard shortcut (Ctrl+L or Cmd+L) to open and close the AI chat dialog. This improves user experience by providing a quick access method to the chat functionality.
+
+This commit also removes a redundant useEffect that was also handling the same shortcut, but in a slightly different way. The remaining useEffect now correctly toggles the chat dialog.

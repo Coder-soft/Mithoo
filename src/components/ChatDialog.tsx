@@ -60,7 +60,7 @@ interface ChatDialogProps {
 const AiLoadingIndicator = () => (
   <div className="flex items-center space-x-2 p-2 text-sm text-muted-foreground">
     <Loader2 className="w-4 h-4 animate-spin" />
-    <span>Mithoo is thinking...</span>
+    <span className="shiny-text">Mithoo is thinking...</span>
   </div>
 );
 
