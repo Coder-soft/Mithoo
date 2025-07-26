@@ -169,3 +169,12 @@ All colors MUST be HSL.
     background-position: -200% center;
   }
 }
+
+/* Custom link styles for BlockNote editor to override defaults */
+[data-blocknote-editor] a {
+  color: hsl(var(--primary)) !important;
+}
+
+[data-blocknote-editor] a:hover {
+  color: hsl(var(--primary) / 0.8) !important;
+}
