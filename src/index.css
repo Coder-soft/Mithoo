@@ -178,3 +178,14 @@ All colors MUST be HSL.
 [data-blocknote-editor] a:hover {
   color: hsl(var(--primary) / 0.8) !important;
 }
+
+/* Glassmorphism effect for BlockNote UI elements */
+[data-blocknote-react-ui-FormattingToolbar],
+[data-blocknote-react-ui-SlashMenu] {
+  background-color: hsl(var(--card) / 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important; /* For Safari */
+  border: 1px solid hsl(var(--border) / 0.5) !important;
+  box-shadow: var(--shadow-subtle) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+}
