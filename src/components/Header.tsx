@@ -1,10 +1,18 @@
 import { PenTool, LogOut, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FineTuningPanel } from "./FineTuningPanel";
 import { UserPreferences } from "./UserPreferences";
+import { Separator } from "@/components/ui/separator";
 
 interface HeaderProps {
   onCreateArticle?: () => void;
@@ -14,7 +22,7 @@ export const Header = ({ onCreateArticle }: HeaderProps) => {
   const { user, signOut } = useAuth();
 
   return (
-    <header className="h-20 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50">
+    <header className="h-16 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50">
       <div className="container mx-auto flex h-full items-center justify-between px-6">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -32,15 +40,19 @@ export const Header = ({ onCreateArticle }: HeaderProps) => {
               New Article
             </Button>
           )}
+          
+          <Separator orientation="vertical" className="h-6" />
+
           <div className="flex items-center space-x-1">
             <UserPreferences />
             <FineTuningPanel />
           </div>
+
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <Avatar className="h-9 w-9">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name} />
                     <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
