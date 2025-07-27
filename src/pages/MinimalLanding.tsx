@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { PenTool, ArrowRight } from "lucide-react";
 import FeatureShowcase from "@/components/FeatureShowcase";
+import FaultyTerminal from "@/components/FaultyTerminal";
 
 const MinimalLanding = () => {
   const { user, loading } = useAuth();
@@ -50,8 +51,14 @@ const MinimalLanding = () => {
       </header>
 
       <main className="flex-grow">
-        <section className="flex items-center justify-center py-24 md:py-32">
-          <div className="container mx-auto px-6 text-center">
+        <section className="relative flex items-center justify-center py-24 md:py-32 overflow-hidden">
+          <FaultyTerminal
+            className="absolute inset-0 w-full h-full z-0"
+            tint="#e82a4a"
+            scale={2}
+            curvature={0}
+          />
+          <div className="relative z-10 container mx-auto px-6 text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-foreground max-w-4xl mx-auto">
               Effortless Article Creation, Powered by AI
             </h1>
@@ -76,7 +83,7 @@ const MinimalLanding = () => {
       <footer className="py-6 bg-muted/30">
         <div className="container mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Mithoo. All rights reserved.
+            © {new date().getFullYear()} Mithoo. All rights reserved.
           </p>
         </div>
       </footer>

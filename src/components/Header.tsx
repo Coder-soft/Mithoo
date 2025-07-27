@@ -1,4 +1,4 @@
-import { PenTool, LogOut, Plus } from "lucide-react";
+import { Bird, LogOut, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FineTuningPanel } from "./FineTuningPanel";
 import { UserPreferences } from "./UserPreferences";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onCreateArticle?: () => void;
@@ -27,19 +28,26 @@ export const Header = ({ onCreateArticle }: HeaderProps) => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <PenTool className="w-4 h-4 text-primary-foreground" />
+              <Bird className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-xl font-bold text-foreground">Mithoo</h1>
           </div>
         </div>
         
         <div className="flex items-center space-x-4">
-          {onCreateArticle && (
-            <Button onClick={onCreateArticle} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              New Article
-            </Button>
-          )}
+          <Button
+            onClick={onCreateArticle}
+            size="sm"
+            aria-hidden={!onCreateArticle}
+            className={cn("transition-all", {
+              "opacity-0 pointer-events-none": !onCreateArticle,
+              "opacity-100 pointer-events-auto": onCreateArticle,
+            })}
+            disabled={!onCreateArticle}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Article
+          </Button>
           
           <Separator orientation="vertical" className="h-6" />
 
