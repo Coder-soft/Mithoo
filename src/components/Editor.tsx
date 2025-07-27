@@ -131,7 +131,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   }
 
   return (
-    <div className="flex-1 bg-background text-foreground">
+    <div className="flex-1 bg-background text-foreground flex flex-col">
       <div className="p-4 border-b border-border flex items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article Title..." className="text-xl font-semibold border-none bg-transparent focus-visible:ring-0 p-0 h-auto w-full" />
@@ -161,11 +161,11 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
               ))}
             </PopoverContent>
           </Popover>
-          <Button size="sm" onClick={handleSave}><Save className="w-4 h-4 mr-2" />Save</Button>
+          <Button size="sm" onClick={handleSave} className="transition-transform active:scale-95"><Save className="w-4 h-4 mr-2" />Save</Button>
         </div>
       </div>
 
-      <BlockNoteView editor={editor} theme="dark" className="p-6" onChange={async () => {
+      <BlockNoteView editor={editor} theme="dark" className="p-6 flex-1" onChange={async () => {
         if (editor) {
           const text = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
           const stats = getWordAndCharCount(text);

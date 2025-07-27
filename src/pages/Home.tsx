@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { ChatDialog } from "@/components/ChatDialog";
 import { DiffViewerDialog } from "@/components/DiffViewerDialog";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
@@ -206,7 +207,7 @@ const Home = () => {
           </div>
         </aside>
 
-        <main className="flex-grow flex flex-col overflow-y-auto">
+        <main className="flex-grow flex flex-col overflow-y-auto min-w-0">
           <div className="flex-shrink-0 border-b border-border bg-background flex items-center px-2">
             <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setIsPanelOpen(!isPanelOpen)}>
               {isPanelOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
@@ -220,7 +221,18 @@ const Home = () => {
               ))}
             </div>
           </div>
-          <Editor ref={editorRef} key={currentArticle?.id || 'no-article'} currentArticle={currentArticle} onArticleUpdate={onArticleUpdate} onMarkdownChange={setMarkdownContent} />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentArticle?.id || 'no-article'}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col min-h-0"
+            >
+              <Editor ref={editorRef} currentArticle={currentArticle} onArticleUpdate={onArticleUpdate} onMarkdownChange={setMarkdownContent} />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
       {diffData && <DiffViewerDialog isOpen={isDiffDialogOpen} onClose={() => setIsDiffDialogOpen(false)} oldContent={diffData.old} newContent={diffData.new} onAccept={handleAcceptChanges} />}
