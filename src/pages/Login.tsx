@@ -3,7 +3,6 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
-import { PenTool } from 'lucide-react';
 
 const Login = () => {
   const { user, loading } = useAuth();
@@ -29,7 +28,7 @@ const Login = () => {
         <div className="flex flex-col items-center mb-8">
             <div className="flex items-center space-x-2 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <PenTool className="w-5 h-5 text-primary-foreground" />
+                    <span className="text-xl">🦜</span>
                 </div>
                 <h1 className="text-3xl font-bold text-foreground">Mithoo</h1>
             </div>

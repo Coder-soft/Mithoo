@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, FileText, PenTool, Search, Settings, Sparkles } from "lucide-react";
+import { Bot, FileText, Search, Settings, Sparkles } from "lucide-react";
 
 const features = [
   {
-    icon: <PenTool className="w-8 h-8 text-primary" />,
+    icon: <span className="text-4xl">🦜</span>,
     title: "AI-Powered Writing",
     description: "Generate entire articles from a simple title or outline. Let AI handle the heavy lifting of drafting content.",
   },

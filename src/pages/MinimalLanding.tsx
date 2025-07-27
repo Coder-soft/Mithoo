@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { PenTool, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import FeatureShowcase from "@/components/FeatureShowcase";
 
 const MinimalLanding = () => {
@@ -36,7 +36,7 @@ const MinimalLanding = () => {
         <div className="container mx-auto flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <PenTool className="w-4 h-4 text-primary-foreground" />
+              <span className="text-lg">🦜</span>
             </div>
             <h1 className="text-xl font-bold text-foreground">Mithoo</h1>
           </Link>
