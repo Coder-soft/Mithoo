@@ -23,7 +23,7 @@ export const Header = ({ onCreateArticle }: HeaderProps) => {
 
   return (
     <header className="h-16 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50">
-      <div className="container mx-auto flex h-full items-center justify-between px-6">
+      <div className="flex h-full items-center justify-between px-6">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
