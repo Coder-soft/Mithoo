@@ -163,7 +163,7 @@ const Home = () => {
     <div className="h-screen bg-background flex flex-col">
       <Header onCreateArticle={() => setShowNewArticleDialog(true)} />
       <div className="flex-grow flex overflow-hidden">
-        <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-background/30 backdrop-blur-md border-r border-border">
+        <nav className="flex flex-col items-center gap-4 py-4 px-2 bg-background/30 backdrop-blur-md border-r border-border flex-shrink-0">
           <Button variant={'secondary'} size="icon" aria-label="Articles"><Book className="w-5 h-5" /></Button>
         </nav>
 
