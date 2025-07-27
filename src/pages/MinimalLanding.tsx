@@ -83,7 +83,7 @@ const MinimalLanding = () => {
       <footer className="py-6 bg-muted/30">
         <div className="container mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            © {new date().getFullYear()} Mithoo. All rights reserved.
+            © {new Date().getFullYear()} Mithoo. All rights reserved.
           </p>
         </div>
       </footer>
