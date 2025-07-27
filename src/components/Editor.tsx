@@ -9,8 +9,6 @@ import { Save, FileText, Pilcrow, Loader2, Sparkles } from "lucide-react";
 import { Article, useArticle } from "@/hooks/useArticle";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 interface EditorProps {
   currentArticle?: Article | null;
@@ -29,7 +27,6 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   const [charCount, setCharCount] = useState(0);
   type HumanizeMode = 'subtle' | 'balanced' | 'strong' | 'stealth';
   const [humanizing, setHumanizing] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const editor: BlockNoteEditor | null = useCreateBlockNote();
 
@@ -86,14 +83,13 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   }, [currentArticle, editor, onMarkdownChange]);
 
   const handleSave = async () => {
-    if (!currentArticle || !editor || saving) return;
-    setSaving(true);
+    if (!currentArticle || !editor) return;
     const content = JSON.stringify(editor.topLevelBlocks);
     const updated = await updateArticle(currentArticle.id, { title, content, word_count: wordCount });
     if (updated) {
       onArticleUpdate(updated);
+      toast.success('Article saved successfully');
     }
-    setTimeout(() => setSaving(false), 1000);
   };
 
   const handleHumanize = async (mode: HumanizeMode) => {
@@ -106,7 +102,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
         body: { text: markdown, mode: humanizeMode }
       });
       if (error) throw error;
-      const humanized = (data as unknown).humanizedText as string;
+      const humanized = (data as any).humanizedText as string;
       const blocks = await editor.tryParseMarkdownToBlocks(humanized);
       editor.replaceBlocks(editor.topLevelBlocks, blocks);
       const stats = getWordAndCharCount(humanized);
@@ -114,7 +110,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
       setCharCount(stats.characters);
       if (onMarkdownChange) onMarkdownChange(humanized);
       toast.success(`Article humanized using ${mode} mode`);
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Humanize error:', err);
       toast.error(err.message || 'Failed to humanize article');
     } finally {
@@ -135,13 +131,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
   }
 
   return (
-    <motion.div 
-      key={currentArticle.id}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="flex-1 bg-background text-foreground flex flex-col"
-    >
+    <div className="flex-1 bg-background text-foreground">
       <div className="p-4 border-b border-border flex items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Article Title..." className="text-xl font-semibold border-none bg-transparent focus-visible:ring-0 p-0 h-auto w-full" />
@@ -171,14 +161,11 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
               ))}
             </PopoverContent>
           </Popover>
-          <Button size="sm" onClick={handleSave} disabled={saving} className={cn(saving && "animate-pulse")}>
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
+          <Button size="sm" onClick={handleSave}><Save className="w-4 h-4 mr-2" />Save</Button>
         </div>
       </div>
 
-      <BlockNoteView editor={editor} theme="dark" className="p-6 flex-grow" onChange={async () => {
+      <BlockNoteView editor={editor} theme="dark" className="p-6" onChange={async () => {
         if (editor) {
           const text = await editor.blocksToMarkdownLossy(editor.topLevelBlocks);
           const stats = getWordAndCharCount(text);
@@ -187,6 +174,6 @@ export const Editor = forwardRef<EditorRef, EditorProps>(({ currentArticle, onAr
           if (onMarkdownChange) onMarkdownChange(text);
         }
       }} />
-    </motion.div>
+    </div>
   );
 });
