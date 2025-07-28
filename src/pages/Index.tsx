@@ -7,7 +7,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { useNavigate } from "react-router-dom";
 
 function IndexPage() {
-  const { user }. = useSession();
+  const { user } = useSession();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
