@@ -1,5 +1,5 @@
 # AI-Powered Markdown Editor
-
+***This project is an example of powerful vibe coding apps power***
 This is a modern, AI-enhanced markdown editor designed for a seamless and powerful writing experience. Built with a modern frontend stack, it integrates deeply with Supabase for backend services, authentication, and AI-powered features.
 
 ## ✨ Features
