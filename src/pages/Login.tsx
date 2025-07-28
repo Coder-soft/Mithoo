@@ -1,32 +1,56 @@
-"use client";
-
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
-import { useSession } from '@/contexts/SessionContext';
 
-function LoginPage() {
-  const { session } = useSession();
+const Login = () => {
+  const { user, loading } = useAuth();
 
-  if (session) {
-    return <Navigate to="/" replace />;
+  if (loading) {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+                <h2 className="text-lg font-semibold mb-2">Loading...</h2>
+                <p className="text-muted-foreground">Please wait while we check your session.</p>
+            </div>
+        </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/app" replace />;
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-        <h2 className="text-3xl font-bold text-center text-gray-800">Welcome</h2>
-        <p className="text-center text-gray-500">Sign in to access your agent</p>
-        <Auth
-          supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
-          providers={[]}
-          theme="light"
-        />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="flex flex-col items-center mb-8">
+            <div className="flex items-center space-x-2 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <span className="text-xl">🦜</span>
+                </div>
+                <h1 className="text-3xl font-bold text-foreground">Mithoo</h1>
+            </div>
+            <h2 className="text-center text-2xl font-semibold text-foreground">
+                Sign in to your workspace
+            </h2>
+            <p className="text-muted-foreground mt-2">
+                Write amazing articles with your AI companion.
+            </p>
+        </div>
+        <div className="bg-card/60 backdrop-blur-lg p-8 rounded-lg shadow-subtle border border-border/50">
+            <Auth
+              supabaseClient={supabase}
+              appearance={{ theme: ThemeSupa }}
+              providers={['google']}
+              onlyThirdPartyProviders
+              theme="dark"
+            />
+        </div>
       </div>
     </div>
   );
-}
+};
 
-export default LoginPage;
+export default Login;

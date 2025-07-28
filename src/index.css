@@ -1,3 +1,191 @@
+@import "@blocknote/core/style.css";
+@import "@blocknote/shadcn/style.css";
+
+.user-prompt,
+.user-prompt * {
+  color: white !important;
+}
+
+.sidebar {
+  background-color: #2d2d2d;
+}
+
+.sidebar .sidebar-article-name {
+  color: white !important;
+}
+
+[style*="background-color: red"],
+[class*="bg-red"] {
+  color: white !important;
+}
+
+[style*="background-color: red"] *,
+[class*="bg-red"] * {
+  color: white !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 220 15% 15%; /* Dark Silver/Charcoal */
+    --foreground: 220 15% 95%; /* Light Silver */
+
+    --card: 220 15% 20%;
+    --card-foreground: 220 15% 95%;
+
+    --popover: 220 15% 18%;
+    --popover-foreground: 220 15% 95%;
+
+    --primary: 350 85% 55%; /* Red */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 350 80% 80%;
+
+    --secondary: 220 15% 30%; /* Muted Gray */
+    --secondary-foreground: 220 15% 95%;
+
+    --muted: 220 15% 25%;
+    --muted-foreground: 220 10% 65%;
+
+    --accent: 350 85% 55%; /* Red */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 350 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 30%;
+    --input: 220 15% 30%;
+    --ring: 350 85% 55%; /* Red */
+
+    /* Mithoo specific tokens */
+    --editor-background: 220 15% 12%;
+    --editor-foreground: 220 15% 95%;
+    --chat-background: 220 15% 18%;
+    --ai-message: 220 15% 22%;
+    --user-message: 350 85% 55%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(350 85% 55%), hsl(350 75% 65%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 15% 20%), hsl(220 15% 18%));
+    
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(350 85% 55% / 0.2);
+    --shadow-subtle: 0 2px 10px -2px hsl(220 20% 10% / 0.2);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 1rem; /* Fully rounded corners */
+
+    --sidebar-background: 220 15% 18%;
+    --sidebar-foreground: 220 15% 95%;
+    --sidebar-primary: 350 85% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 25%;
+    --sidebar-accent-foreground: 220 15% 95%;
+    --sidebar-border: 220 15% 30%;
+    --sidebar-ring: 350 85% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Custom selection styles */
+  ::selection {
+    @apply bg-primary text-primary-foreground;
+  }
+  ::-moz-selection { /* Firefox */
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* Custom link styles */
+  a {
+    @apply text-primary transition-colors hover:text-primary/80 hover:underline;
+  }
+}
+
+/* Styles for React-Diff-Viewer */
+.diff-container {
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+}
+.diff-viewer {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+.diff-viewer table {
+  width: 100%;
+}
+.diff-viewer pre {
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+.diff-viewer .line-prefix {
+  color: hsl(var(--muted-foreground));
+}
+.diff-viewer .diff-added {
+  background-color: hsl(140 80% 20%);
+}
+.diff-viewer .diff-removed {
+  background-color: hsl(0 80% 20%);
+}
+.diff-viewer .diff-gutter-added {
+  background-color: hsl(140 70% 15%);
+}
+.diff-viewer .diff-gutter-removed {
+  background-color: hsl(0 70% 15%);
+}
+
+.shiny-text {
+  color: hsl(var(--muted-foreground));
+  background: linear-gradient(
+    120deg,
+    hsl(var(--muted-foreground)) 40%,
+    hsl(var(--foreground)) 50%,
+    hsl(var(--muted-foreground)) 60%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 2s linear infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: -200% center;
+  }
+}
+
+/* Custom link styles for BlockNote editor to override defaults */
+[data-blocknote-editor] a {
+  color: hsl(var(--primary)) !important;
+}
+
+[data-blocknote-editor] a:hover {
+  color: hsl(var(--primary) / 0.8) !important;
+}
+
+/* Glassmorphism effect for BlockNote UI elements */
+[data-blocknote-react-ui-FormattingToolbar],
+[data-blocknote-react-ui-SlashMenu] {
+  background-color: hsl(var(--card) / 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important; /* For Safari */
+  border: 1px solid hsl(var(--border) / 0.5) !important;
+  box-shadow: var(--shadow-subtle) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+}
